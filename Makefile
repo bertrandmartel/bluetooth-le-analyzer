@@ -1,4 +1,4 @@
-OBJECTS=test.o rfduino-makefile/RFduino/libraries/RFduinoBLE/RFduinoBLE.o
+OBJECTS=adverter.o rfduino-makefile/RFduino/libraries/RFduinoBLE/RFduinoBLE.o
 HEADERS=-Irfduino-makefile/RFduino/libraries/RFduinoBLE
 
 export OBJECTS
