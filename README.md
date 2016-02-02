@@ -1,6 +1,6 @@
 # RFdroid
 
-Android tool measuring Bluetooth advertizing packet reception rate using one RFduino module
+Android app measuring Bluetooth advertizing packet reception rate using one RFduino module
 
 ## Useful links
 
@@ -10,7 +10,9 @@ Big thanks to Tolson for his great Lazarus Library
 
 ## External projects
 
-* https://github.com/akinaru/rfduino-makefile
+* Makefile for rfduino : https://github.com/akinaru/rfduino-makefile
+
+* BLE AD frame parser : https://github.com/TakahikoKawasaki/nv-bluetooth
 
 ## License
 
