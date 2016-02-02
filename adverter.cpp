@@ -93,20 +93,23 @@ void loop() {
 }
 
 void RFduinoBLE_onDisconnect() {
+	Serial.println("onDisconnect");
+	interrupt();
 }
 
+void RFduinoBLE_onConnect() {
+  Serial.println("onConnect");
+}
 void RFduinoBLE_onReceive(char *data, int len) {
 
 	Serial.println("onReceive()");
 
-	if (data!=0) {
+	if (data!=0 && len > 0) {
 
 		Serial.print("setting interval to : ");
-		Serial.print(atoi(data));
-		Serial.println(" ms");
-
-		advertisement_interval=atoi(data);
-		interrupt();
+		Serial.print((int)data[0]);
+		Serial.println(" ms. Take effect on next disconnection");
+		advertisement_interval=data[0];
 	}
 }
 
