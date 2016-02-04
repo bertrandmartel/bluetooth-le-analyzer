@@ -238,21 +238,7 @@ public class BluetoothCustomManager implements IBluetoothCustomManager {
         if (!scanning) {
 
             broadcastUpdate(BluetoothEvents.BT_EVENT_SCAN_START);
-
-            // Stops scanning after a pre-defined scan period.
-            mHandler.postDelayed(
-                    new Runnable() {
-                        @Override
-                        public void run() {
-                            if (scanning) {
-                                //notify end of scan
-                                broadcastUpdate(BluetoothEvents.BT_EVENT_SCAN_END);
-                                scanning = false;
-                                mBluetoothAdapter.stopLeScan(scanCallback);
-                            }
-                        }
-                    }, SCAN_PERIOD);
-
+            
             scanning = true;
 
             return mBluetoothAdapter.startLeScan(scanCallback);
