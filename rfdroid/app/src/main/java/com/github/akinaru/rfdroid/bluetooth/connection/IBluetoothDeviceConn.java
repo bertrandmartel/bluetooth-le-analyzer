@@ -77,4 +77,6 @@ public interface IBluetoothDeviceConn {
     public IDevice getDevice();
 
     public void disconnect();
+
+    public void setConnected(boolean state);
 }

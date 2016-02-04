@@ -84,6 +84,7 @@ public class RfduinoDevice extends BluetoothDeviceAbstr implements IRfduinoDevic
         Log.i(TAG, "initializing RFduino");
 
         conn.enableDisableNotification(UUID.fromString(RFDUINO_SERVICE), UUID.fromString(RFDUINO_RECEIVE_CHARAC), true);
+        conn.enableGattNotifications(RFDUINO_SERVICE, RFDUINO_RECEIVE_CHARAC);
 
         for (int i = 0; i < initListenerList.size(); i++) {
             initListenerList.get(i).onInit();
@@ -105,7 +106,8 @@ public class RfduinoDevice extends BluetoothDeviceAbstr implements IRfduinoDevic
 
         Log.i(TAG, "setAdvertisingInterval " + intervalMillis + "ms");
 
-        getConn().writeCharacteristic(RFDUINO_SERVICE, RFDUINO_SEND_CHARAC, new byte[]{(byte) intervalMillis}, listener);
+        byte[] data = new byte[]{(byte) (intervalMillis >> 8), (byte) intervalMillis};
+        getConn().writeCharacteristic(RFDUINO_SERVICE, RFDUINO_SEND_CHARAC, data, listener);
 
     }
 }

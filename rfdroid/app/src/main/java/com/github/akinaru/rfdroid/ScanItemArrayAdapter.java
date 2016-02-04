@@ -62,7 +62,6 @@ public class ScanItemArrayAdapter extends ArrayAdapter<BluetoothObject> {
                 holder = new ViewHolder();
 
                 holder.deviceAddress = (TextView) vi.findViewById(R.id.text1);
-                holder.deviceName = (TextView) vi.findViewById(R.id.text2);
 
                 vi.setTag(holder);
             } else {
@@ -70,7 +69,6 @@ public class ScanItemArrayAdapter extends ArrayAdapter<BluetoothObject> {
             }
 
             holder.deviceAddress.setText(scanningList.get(position).getDeviceAddress());
-            holder.deviceName.setText(scanningList.get(position).getDeviceName());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -99,7 +97,6 @@ public class ScanItemArrayAdapter extends ArrayAdapter<BluetoothObject> {
 
     public static class ViewHolder {
         public TextView deviceAddress;
-        public TextView deviceName;
     }
 
 }

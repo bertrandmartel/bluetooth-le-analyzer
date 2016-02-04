@@ -128,6 +128,7 @@ public class BluetoothDeviceConn implements IBluetoothDeviceConn {
             @Override
             // New services discovered
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+
                 if (status == BluetoothGatt.GATT_SUCCESS) {
 
                     Runnable test = new Runnable() {
@@ -169,7 +170,7 @@ public class BluetoothDeviceConn implements IBluetoothDeviceConn {
 
             @Override
             public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-                manager.getEventManager().set();
+                //manager.getEventManager().set();
                 if (device != null) {
                     device.notifyCharacteristicWriteReceived(characteristic);
                 }
@@ -182,6 +183,7 @@ public class BluetoothDeviceConn implements IBluetoothDeviceConn {
                                              int status) {
                 manager.getEventManager().set();
                 if (device != null) {
+                    Log.i(TAG, "onCharacteristicRead");
                     device.notifyCharacteristicReadReceived(characteristic);
                 }
             }
@@ -195,7 +197,9 @@ public class BluetoothDeviceConn implements IBluetoothDeviceConn {
             // Characteristic notification
             public void onCharacteristicChanged(BluetoothGatt gatt,
                                                 BluetoothGattCharacteristic characteristic) {
+                manager.getEventManager().set();
                 if (device != null) {
+                    Log.i(TAG, "onCharacteristicChanged");
                     device.notifyCharacteristicChangeReceived(characteristic);
                 }
             }
@@ -282,5 +286,10 @@ public class BluetoothDeviceConn implements IBluetoothDeviceConn {
         if (gatt != null) {
             gatt.disconnect();
         }
+    }
+
+    @Override
+    public void setConnected(boolean state) {
+        connected = state;
     }
 }

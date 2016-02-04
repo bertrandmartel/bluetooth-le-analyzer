@@ -169,10 +169,10 @@ public class BluetoothCustomManager implements IBluetoothCustomManager {
 
                 if (device.getAddress() != null &&
                         device.getName() != null &&
-                        device.getName().equals("RFduino") &&
+                        device.getName().equals("RFdroid") &&
                         !scanningList.containsKey(device.getAddress())) {
 
-                    Log.i(TAG, "found a RFduino");
+                    Log.i(TAG, "found a RFdroid");
 
                     List<ADStructure> structures = ADPayloadParser.getInstance().parse(scanRecord);
 
@@ -184,14 +184,15 @@ public class BluetoothCustomManager implements IBluetoothCustomManager {
 
                             ADManufacturerSpecific data = (ADManufacturerSpecific) structure;
 
-                            if (data.getData().length == 8) {
+                            if (data.getData().length == 9) {
 
                                 byte[] name = new byte[7];
                                 System.arraycopy(data.getData(), 0, name, 0, 7);
 
                                 String nameStr = new String(name);
                                 if (nameStr.equals("RFdroid")) {
-                                    advInterval = data.getData()[7];
+                                    advInterval = (data.getData()[7] << 8) + (data.getData()[8] & 0xFF);
+                                    Log.i(TAG, "current scan interval : " + advInterval);
                                 }
                             }
                         }
@@ -356,7 +357,7 @@ public class BluetoothCustomManager implements IBluetoothCustomManager {
                 public void run() {
 
                     BluetoothGattCharacteristic charac = GattUtils.getCharacteristic(getGatt().getServices(), getUid());
-                    charac.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
+                    //charac.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
                     charac.setValue(getValue());
 
                     getGatt().writeCharacteristic(charac);
@@ -459,6 +460,7 @@ public class BluetoothCustomManager implements IBluetoothCustomManager {
 
     @SuppressLint("NewApi")
     public boolean disconnect(String deviceAddress) {
+
         if (mBluetoothAdapter == null || deviceAddress == null) {
             Log.w(TAG, "BluetoothAdapter not initialized or unspecified address.");
             return false;
@@ -467,8 +469,10 @@ public class BluetoothCustomManager implements IBluetoothCustomManager {
         if (bluetoothConnectionList.containsKey(deviceAddress)) {
 
             if (bluetoothConnectionList.get(deviceAddress).getBluetoothGatt() != null) {
+                Log.i(TAG, "disconnect device");
                 bluetoothConnectionList.get(deviceAddress).getBluetoothGatt().disconnect();
                 bluetoothConnectionList.get(deviceAddress).getBluetoothGatt().close();
+                bluetoothConnectionList.get(deviceAddress).setConnected(false);
             }
 
             return true;
