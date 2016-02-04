@@ -35,7 +35,6 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
-import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.design.widget.NavigationView;
@@ -61,11 +60,13 @@ import com.github.akinaru.rfdroid.bluetooth.events.BluetoothEvents;
 import com.github.akinaru.rfdroid.bluetooth.events.BluetoothObject;
 import com.github.akinaru.rfdroid.bluetooth.listener.IPushListener;
 import com.github.akinaru.rfdroid.bluetooth.rfduino.IRfduinoDevice;
-import com.github.akinaru.rfdroid.chart.ReceptionRateValueFormatter;
-import com.github.mikephil.charting.charts.HorizontalBarChart;
+import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
+import com.github.mikephil.charting.formatter.YAxisValueFormatter;
 import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
 
 import org.adw.library.widgets.discreteseekbar.DiscreteSeekBar;
@@ -123,12 +124,10 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
 
     private RFdroidService currentService = null;
 
-    protected HorizontalBarChart mChart;
-
-    private Typeface tf;
+    protected BarChart mChart;
 
     protected String[] mMonths = new String[]{
-            "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"
+            "1s", "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s", "10s", "11s", "12s"
     };
 
     private Toolbar toolbar = null;
@@ -201,14 +200,47 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
 
         registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
 
-        /*
-        mChart = (HorizontalBarChart) findViewById(R.id.chart1);
+        mChart = (BarChart) findViewById(R.id.chart1);
+
+        mChart.setDrawBarShadow(false);
+        mChart.setDrawValueAboveBar(true);
 
         mChart.setDescription("");
 
-        setData();
+        // if more than 60 entries are displayed in the chart, no values will be
+        // drawn
+        mChart.setMaxVisibleValueCount(60);
 
-        mChart.getAxisLeft().setDrawLabels(false);
+        // scaling can now only be done on x- and y-axis separately
+        mChart.setPinchZoom(false);
+
+        mChart.setDrawGridBackground(false);
+
+        XAxis xAxis = mChart.getXAxis();
+        xAxis.setDrawGridLines(false);
+        xAxis.setSpaceBetweenLabels(2);
+        xAxis.setDrawLabels(true);
+        xAxis.setDrawAxisLine(true);
+
+        YAxisValueFormatter custom = new MyYAxisValueFormatter();
+
+        YAxis leftAxis = mChart.getAxisLeft();
+        leftAxis.setLabelCount(8, false);
+        leftAxis.setValueFormatter(custom);
+        leftAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
+        leftAxis.setSpaceTop(15f);
+
+        YAxis rightAxis = mChart.getAxisRight();
+        rightAxis.setDrawGridLines(false);
+        rightAxis.setLabelCount(8, false);
+        rightAxis.setValueFormatter(custom);
+        rightAxis.setSpaceTop(15f);
+
+        mChart.getLegend().setEnabled(false);
+
+        setData(12, 50);
+
+        mChart.getAxisLeft().setDrawLabels(true);
         mChart.getAxisRight().setDrawLabels(true);
         mChart.getXAxis().setDrawLabels(true);
         mChart.getLegend().setEnabled(false);
@@ -218,11 +250,13 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
         mChart.setClickable(false);
         mChart.setDoubleTapToZoomEnabled(false);
         mChart.setPinchZoom(false);
-        mChart.getXAxis().setEnabled(false);
+        mChart.getXAxis().setEnabled(true);
         mChart.invalidate();
-        */
+
+
         discreteSeekBar = (DiscreteSeekBar) findViewById(R.id.discrete1);
         discreteSeekBar.keepShowingPopup(true);
+
         discreteSeekBar.setNumericTransformer(new DiscreteSeekBar.NumericTransformer() {
             @Override
             public int transform(int value) {
@@ -343,6 +377,10 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
             case R.id.scan_status:
                 changeScanStatus(menuItem);
                 break;
+            case R.id.interval_max: {
+                displayChangeIntervalMaxDialog();
+                break;
+            }
         }
         mDrawer.closeDrawers();
     }
@@ -371,6 +409,16 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
 
             menuItem.setTitle("Stop scanning");
         }
+    }
+
+    private void displayChangeIntervalMaxDialog() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                ChangeMaxIntervalDialog cdd = new ChangeMaxIntervalDialog(RFdroidActivity.this);
+                cdd.show();
+            }
+        });
     }
 
     private void closeDialog() {
@@ -450,21 +498,29 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
     public void onStopTrackingTouch(SeekBar seekBar) {
     }
 
-    private void setData() {
+    private void setData(int count, float range) {
+
+        ArrayList<String> xVals = new ArrayList<String>();
+        for (int i = 0; i < count; i++) {
+            xVals.add(mMonths[i % 12]);
+        }
 
         ArrayList<BarEntry> yVals1 = new ArrayList<BarEntry>();
-        ArrayList<String> xVals = new ArrayList<String>();
 
-        xVals.add("");
-        yVals1.add(new BarEntry(100, 0));
+        for (int i = 0; i < count; i++) {
+            float mult = (range + 1);
+            float val = (float) (Math.random() * mult);
+            yVals1.add(new BarEntry(val, i));
+        }
 
-        BarDataSet set1 = new BarDataSet(yVals1, "packet rate for interval 20ms");
+        BarDataSet set1 = new BarDataSet(yVals1, "DataSet");
+        set1.setBarSpacePercent(35f);
+        set1.setColor(Color.parseColor("#0288D1"));
 
         ArrayList<IBarDataSet> dataSets = new ArrayList<IBarDataSet>();
         dataSets.add(set1);
 
         BarData data = new BarData(xVals, dataSets);
-        data.setValueFormatter(new ReceptionRateValueFormatter());
         data.setValueTextSize(10f);
 
         mChart.setData(data);
@@ -536,7 +592,7 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
             Intent intent = new Intent(this, RFdroidService.class);
 
             // bind the service to current activity and create it if it didnt exist before
-            startService(intent);
+            //startService(intent);
             bound = bindService(intent, mServiceConnection, BIND_AUTO_CREATE);
         }
 
