@@ -1,3 +1,6 @@
 [submodule "rfduino-makefile"]
 	path = rfduino-makefile
 	url = git://github.com/akinaru/rfduino-makefile.git
+[submodule "rfdroid/discreteSeekBar"]
+	path = rfdroid/discreteSeekBar
+	url = git://github.com/akinaru/discreteSeekBar.git
