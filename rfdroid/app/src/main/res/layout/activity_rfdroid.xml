@@ -26,27 +26,19 @@
                 android:layout_width="match_parent"
                 android:layout_height="?actionBarSize" />
 
-
             <LinearLayout
                 android:id="@+id/container2"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:orientation="vertical">
 
-                <ListView
-                    android:id="@+id/listView"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="20dp" />
-
                 <org.adw.library.widgets.discreteseekbar.DiscreteSeekBar
                     android:id="@+id/discrete1"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingBottom="10dp"
                     android:paddingLeft="20dp"
                     android:paddingRight="20dp"
-                    android:paddingTop="25dp"
+                    android:paddingTop="60dp"
                     app:dsb_indicatorColor="#0288D1"
                     app:dsb_max="100"
                     app:dsb_min="4"
@@ -54,16 +46,18 @@
                     app:dsb_value="4" />
 
                 <TextView
+                    android:id="@+id/interval_head"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif"
                     android:gravity="center"
-                    android:paddingBottom="10dp"
+                    android:paddingBottom="5dp"
                     android:text="Interval - 20ms"
                     android:textColor="#212121"
                     android:textSize="24sp" />
 
                 <TextView
+                    android:id="@+id/global_reception_rate"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif"
@@ -183,7 +177,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:fontFamily="sans-serif"
-                            android:paddingBottom="5dp"
+                            android:paddingBottom="0dp"
                             android:paddingLeft="10dp"
                             android:paddingTop="5dp"
                             android:text="average packet received"
@@ -197,6 +191,7 @@
                             android:layout_weight="1"
                             android:fontFamily="sans-serif"
                             android:padding="5dp"
+                            android:paddingBottom="0dp"
                             android:paddingLeft="20dp"
                             android:text="5/6 in 1s"
                             android:textColor="@color/tableTextColor"
@@ -209,10 +204,9 @@
                 <com.github.mikephil.charting.charts.BarChart
                     android:id="@+id/chart1"
                     android:layout_width="match_parent"
-                    android:layout_height="220dp"
+                    android:layout_height="250dp"
                     android:layout_marginLeft="10dp"
-                    android:layout_marginRight="10dp"
-                    android:layout_marginTop="10dp" />
+                    android:layout_marginRight="10dp" />
 
             </LinearLayout>
 
