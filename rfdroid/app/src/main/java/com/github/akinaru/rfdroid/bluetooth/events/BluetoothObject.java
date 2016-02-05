@@ -90,4 +90,8 @@ public class BluetoothObject {
     public int getAdvertizingInterval() {
         return advertizingInterval;
     }
+
+    public void setAdvertizingInterval(int advertizingInterval) {
+        this.advertizingInterval = advertizingInterval;
+    }
 }

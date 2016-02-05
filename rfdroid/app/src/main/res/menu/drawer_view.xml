@@ -1,12 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <group android:checkableBehavior="single">
-        <item
-            android:id="@+id/scan_status"
-            android:title="Stop scanning" />
-        <item
-            android:id="@+id/interval_max"
-            android:title="Change max AD interval" />
-    </group>
+    <item
+        android:id="@+id/switch_chart_data"
+        android:title="Switch chart data to 'packet count'" />
+
 </menu>

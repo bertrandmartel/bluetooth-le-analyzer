@@ -106,6 +106,10 @@ public class RfduinoDevice extends BluetoothDeviceAbstr implements IRfduinoDevic
 
         Log.i(TAG, "setAdvertisingInterval " + intervalMillis + "ms");
 
+        intervalMillis = (int) (intervalMillis / 0.625);
+
+        Log.i(TAG, "sending " + intervalMillis);
+
         byte[] data = new byte[]{(byte) (intervalMillis >> 8), (byte) intervalMillis};
         getConn().writeCharacteristic(RFDUINO_SERVICE, RFDUINO_SEND_CHARAC, data, listener);
 

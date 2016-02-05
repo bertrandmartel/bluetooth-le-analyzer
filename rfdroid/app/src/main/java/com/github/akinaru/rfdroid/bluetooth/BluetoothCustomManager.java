@@ -36,9 +36,11 @@ import android.os.Handler;
 import android.util.Log;
 
 import com.github.akinaru.rfdroid.IADListener;
+import com.github.akinaru.rfdroid.IMeasurement;
 import com.github.akinaru.rfdroid.bluetooth.connection.BluetoothDeviceConn;
 import com.github.akinaru.rfdroid.bluetooth.connection.IBluetoothDeviceConn;
 import com.github.akinaru.rfdroid.bluetooth.events.BluetoothEvents;
+import com.github.akinaru.rfdroid.bluetooth.events.BluetoothObject;
 import com.github.akinaru.rfdroid.bluetooth.listener.IPushListener;
 import com.github.akinaru.rfdroid.constant.JsonConstants;
 import com.github.akinaru.rfdroid.utils.ManualResetEvent;
@@ -50,6 +52,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -137,11 +140,14 @@ public class BluetoothCustomManager implements IBluetoothCustomManager {
     private Context context = null;
     private IADListener adListener = null;
 
+    private IMeasurement measurement = null;
+
     /**
      * Build bluetooth manager
      */
-    public BluetoothCustomManager(Context context) {
+    public BluetoothCustomManager(Context context, IMeasurement measurement) {
         this.context = context;
+        this.measurement = measurement;
     }
 
 
@@ -169,7 +175,9 @@ public class BluetoothCustomManager implements IBluetoothCustomManager {
                     if (scanningList.containsKey(device.getAddress())) {
 
                         if (adListener != null) {
-                            adListener.onADframeReceived(device.getAddress());
+                            long ts = new Date().getTime();
+                            measurement.getHistoryList().add(ts);
+                            adListener.onADframeReceived(ts, measurement.getHistoryList());
                         }
                     } else {
                         Log.i(TAG, "found a RFdroid");
@@ -202,11 +210,13 @@ public class BluetoothCustomManager implements IBluetoothCustomManager {
 
                             scanningList.put(device.getAddress(), device);
 
+                            measurement.setBtDevice(new BluetoothObject(device.getAddress(), device.getName(), (int) (advInterval * 0.625)));
+
                             try {
                                 JSONObject object = new JSONObject();
                                 object.put(JsonConstants.BT_ADDRESS, device.getAddress());
                                 object.put(JsonConstants.BT_DEVICE_NAME, device.getName());
-                                object.put(JsonConstants.BT_ADVERTISING_INTERVAL, advInterval);
+                                object.put(JsonConstants.BT_ADVERTISING_INTERVAL, (int) (advInterval * 0.625));
 
                                 ArrayList<String> deviceInfo = new ArrayList<>();
                                 deviceInfo.add(object.toString());

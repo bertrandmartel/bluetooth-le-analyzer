@@ -14,7 +14,7 @@
         android:paddingRight="20dp"
         android:paddingTop="25dp"
         app:dsb_indicatorColor="#0288D1"
-        app:dsb_max="100"
+        app:dsb_max="2048"
         app:dsb_min="4"
         app:dsb_progressColor="#0288D1"
         app:dsb_value="4" />

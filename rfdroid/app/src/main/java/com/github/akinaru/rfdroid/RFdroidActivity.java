@@ -31,10 +31,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.graphics.PorterDuff;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -44,9 +46,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.GestureDetector;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewTreeObserver;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.TableLayout;
 import android.widget.TableRow;
@@ -70,19 +77,16 @@ import org.adw.library.widgets.discreteseekbar.DiscreteSeekBar;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Dotti device management main activity
  *
  * @author Bertrand Martel
  */
-public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener, IADListener {
+public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener, IADListener, IScheduledMeasureListener {
 
     /**
      * debug tag
@@ -90,8 +94,6 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
     private String TAG = this.getClass().getName();
 
     private ProgressDialog dialog = null;
-
-    private boolean toSecondLevel = false;
 
     private boolean bound = false;
 
@@ -107,18 +109,9 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
      */
     private BluetoothAdapter mBluetoothAdapter = null;
 
-    /**
-     * current index of connecting device item in device list
-     */
-    private int list_item_position = 0;
-
     private RFdroidService currentService = null;
 
     protected BarChart mChart;
-
-    protected String[] mMonths = new String[]{
-            "1s", "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s", "10s", "11s", "12s"
-    };
 
     private Toolbar toolbar = null;
     private DrawerLayout mDrawer = null;
@@ -145,18 +138,47 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
     private TextView samplingTimeTv = null;
     private TextView totalPacketReceiveTv = null;
     private TextView averagePacketReceivedTv = null;
-    private List<Long> history = new ArrayList<>();
-    private List<Integer> globalSumPerSecond = new ArrayList<>();
 
     private SimpleDateFormat sf = new SimpleDateFormat("HH:mm:ss.SSS");
 
-    private ScheduledFuture<?> measurementTask = null;
+    private DataChartType dataChartType = DataChartType.RECEPTION_RATE;
+
+    private SharedPreferences sharedpreferences;
+
+    private final static String PREFERENCES = "storage";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_rfdroid);
+
+        Window window = getWindow();
+        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+
+        if (Build.VERSION.SDK_INT >= 21) {
+            window.setStatusBarColor(getResources().getColor(R.color.default_color));
+        }
+
+        final ScrollView view = (ScrollView) findViewById(R.id.scrollview);
+        view.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
+            @Override
+            public void onScrollChanged() {
+                if (view.getScrollX() == 0 && view.getScrollY() == 0) {
+                    discreteSeekBar.showFloater(250);
+                } else {
+                    discreteSeekBar.hideFloater(1);
+                }
+            }
+        });
+
+        sharedpreferences = getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
+        int dataChartTypeVal = sharedpreferences.getInt("dataChartType", DataChartType.RECEPTION_RATE.ordinal());
+
+        if (dataChartTypeVal == DataChartType.PACKET_NUMBER.ordinal()) {
+            dataChartType = DataChartType.PACKET_NUMBER;
+        }
 
         tablelayout = (TableLayout) findViewById(R.id.tablelayout);
 
@@ -165,14 +187,17 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
         scheduler = Executors.newScheduledThreadPool(1);
 
         //Button button_stop_scanning = (Button) findViewById(R.id.stop_scanning_button);
-        progress_bar = (ProgressBar) findViewById(R.id.scanningProgress);
+        //progress_bar = (ProgressBar) findViewById(R.id.scanningProgress);
 
         // Set a Toolbar to replace the ActionBar.
         toolbar = (Toolbar) findViewById(R.id.toolbar_item);
+
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle("RFdroid - reception rate");
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        toolbar.inflateMenu(R.menu.toolbar_menu);
+
 
         // Find our drawer view
         mDrawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -181,6 +206,7 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
         mDrawer.setDrawerListener(drawerToggle);
 
         nvDrawer = (NavigationView) findViewById(R.id.nvView);
+
         // Setup drawer view
         setupDrawerContent(nvDrawer);
 
@@ -198,10 +224,12 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
         }
 
+        /*
         if (progress_bar != null) {
             progress_bar.setEnabled(false);
             progress_bar.getIndeterminateDrawable().setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN);
         }
+        */
 
         registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
 
@@ -220,45 +248,31 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
         mChart.setPinchZoom(false);
 
         mChart.setDrawGridBackground(false);
+        mChart.setDescriptionColor(Color.parseColor("#000000"));
 
         XAxis xAxis = mChart.getXAxis();
         xAxis.setDrawGridLines(false);
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setSpaceBetweenLabels(0);
-        mChart.getAxisLeft().setDrawGridLines(false);
 
-        YAxisValueFormatter custom = new MyYAxisValueFormatter();
+        YAxisValueFormatter custom = new DataAxisFormatter("%");
 
         YAxis leftAxis = mChart.getAxisLeft();
-        leftAxis.setLabelCount(8, false);
         leftAxis.setValueFormatter(custom);
         leftAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
-        leftAxis.setSpaceTop(15f);
 
         YAxis rightAxis = mChart.getAxisRight();
-        rightAxis.setDrawGridLines(false);
-        rightAxis.setLabelCount(8, false);
         rightAxis.setValueFormatter(custom);
-        rightAxis.setSpaceTop(15f);
+        rightAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
+
+        leftAxis.setDrawGridLines(true);
+        rightAxis.setDrawGridLines(false);
 
         mChart.animateY(1000);
 
-        mChart.getLegend().setEnabled(false);
+        mChart.getLegend().setEnabled(true);
 
-        /*
-        mChart.getAxisLeft().setDrawLabels(true);
-        mChart.getAxisRight().setDrawLabels(true);
-        //mChart.getXAxis().setDrawLabels(true);
-        mChart.getLegend().setEnabled(false);
-        mChart.setDrawGridBackground(false);
-        mChart.setDrawGridBackground(false);
-
-        mChart.setClickable(false);
-        mChart.setDoubleTapToZoomEnabled(false);
-        mChart.setPinchZoom(false);
-        mChart.getXAxis().setEnabled(true);
-        mChart.invalidate();
-        */
+        mChart.setVisibility(View.GONE);
 
         discreteSeekBar = (DiscreteSeekBar) findViewById(R.id.discrete1);
         discreteSeekBar.keepShowingPopup(true);
@@ -284,10 +298,6 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
             @Override
             public void onStopTrackingTouch(DiscreteSeekBar seekBar) {
 
-                if (measurementTask != null) {
-                    measurementTask.cancel(true);
-                    measurementTask = null;
-                }
                 adInterval = seekBar.getProgress() * 5;
 
                 Log.i(TAG, "setting AD interval to " + adInterval + "ms");
@@ -305,10 +315,12 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
 
                                 currentService.stopScan();
 
+                                /*
                                 if (progress_bar != null) {
                                     progress_bar.setEnabled(false);
                                     progress_bar.setVisibility(View.GONE);
                                 }
+                                */
                             }
 
                             if (!currentService.getConnectionList().containsKey(deviceAddress) ||
@@ -335,52 +347,14 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
                                             public void onPushFailure() {
                                                 Log.i(TAG, "onPushFailure");
                                                 currentService.disconnect(deviceAddress);
-                                                runOnUiThread(new Runnable() {
-                                                    @Override
-                                                    public void run() {
-                                                        closeDialog();
-                                                        triggerNewScan();
-                                                        scheduler.schedule(new Runnable() {
-
-                                                            @Override
-                                                            public void run() {
-                                                                runOnUiThread(new Runnable() {
-                                                                    @Override
-                                                                    public void run() {
-                                                                        discreteSeekBar.showFloater(250);
-                                                                    }
-                                                                });
-
-                                                            }
-                                                        }, 500, TimeUnit.MILLISECONDS);
-                                                    }
-                                                });
+                                                refreshViewOnError();
                                             }
 
                                             @Override
                                             public void onPushSuccess() {
                                                 Log.i(TAG, "onPushSuccess");
                                                 currentService.disconnect(deviceAddress);
-                                                runOnUiThread(new Runnable() {
-                                                    @Override
-                                                    public void run() {
-                                                        closeDialog();
-                                                        triggerNewScan();
-                                                        scheduler.schedule(new Runnable() {
-
-                                                            @Override
-                                                            public void run() {
-                                                                runOnUiThread(new Runnable() {
-                                                                    @Override
-                                                                    public void run() {
-                                                                        discreteSeekBar.showFloater(250);
-                                                                    }
-                                                                });
-
-                                                            }
-                                                        }, 500, TimeUnit.MILLISECONDS);
-                                                    }
-                                                });
+                                                refreshViewOnSucccess();
                                             }
                                         });
                                     }
@@ -400,6 +374,22 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
         totalPacketReceiveTv = (TextView) findViewById(R.id.total_packet_received_value);
         averagePacketReceivedTv = (TextView) findViewById(R.id.average_packet_received_value);
 
+        initTv();
+
+        if (mBluetoothAdapter.isEnabled()) {
+            Intent intent = new Intent(this, RFdroidService.class);
+            bound = bindService(intent, mServiceConnection, BIND_AUTO_CREATE);
+        }
+
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        this.getMenuInflater().inflate(R.menu.toolbar_menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    private void initTv() {
         intervalTv.setText("-");
         globalReceptionRateTv.setText("-");
         lastPacketReceivedTv.setText("-");
@@ -423,55 +413,53 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
     public void selectDrawerItem(MenuItem menuItem) {
 
         switch (menuItem.getItemId()) {
-            case R.id.scan_status:
-                changeScanStatus(menuItem);
-                break;
-            case R.id.interval_max: {
-                displayChangeIntervalMaxDialog();
+            case R.id.switch_chart_data: {
+                switchChartData(menuItem);
                 break;
             }
         }
         mDrawer.closeDrawers();
     }
 
+    private void switchChartData(MenuItem menuItem) {
+
+        if (dataChartType == DataChartType.RECEPTION_RATE) {
+            dataChartType = DataChartType.PACKET_NUMBER;
+            menuItem.setTitle("Switch chart data to 'reception rate'");
+            setData(currentService.getGlobalPacketReceivedPerSecond(), "");
+            mChart.invalidate();
+        } else {
+            dataChartType = DataChartType.RECEPTION_RATE;
+            menuItem.setTitle("Switch chart data to 'packet count'");
+            setData(currentService.getGlobalSumPerSecond(), "%");
+            mChart.invalidate();
+        }
+        SharedPreferences.Editor editor = sharedpreferences.edit();
+        editor.putInt("dataChartType", dataChartType.ordinal());
+        editor.commit();
+    }
+
     private void changeScanStatus(MenuItem menuItem) {
 
         if (currentService != null && currentService.isScanning()) {
-
-            if (measurementTask != null) {
-                measurementTask.cancel(true);
-                measurementTask = null;
-            }
+            Log.i(TAG, "scanning stopped...");
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(RFdroidActivity.this, "scanning has stopped", Toast.LENGTH_SHORT).show();
+                }
+            });
             currentService.stopScan();
-
-            if (progress_bar != null) {
-                progress_bar.setEnabled(false);
-                progress_bar.setVisibility(View.GONE);
-            }
-
-            menuItem.setTitle("Start scanning");
-
         } else {
-
+            Log.i(TAG, "scanning ...");
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(RFdroidActivity.this, "scanning ...", Toast.LENGTH_SHORT).show();
+                }
+            });
             triggerNewScan();
-
-            if (progress_bar != null) {
-                progress_bar.setEnabled(true);
-                progress_bar.setVisibility(View.VISIBLE);
-            }
-
-            menuItem.setTitle("Stop scanning");
         }
-    }
-
-    private void displayChangeIntervalMaxDialog() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                ChangeMaxIntervalDialog cdd = new ChangeMaxIntervalDialog(RFdroidActivity.this);
-                cdd.show();
-            }
-        });
     }
 
     private void closeDialog() {
@@ -479,8 +467,6 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
             dialog.cancel();
             dialog = null;
         }
-
-        discreteSeekBar.showFloater(250);
     }
 
     private ActionBarDrawerToggle setupDrawerToggle() {
@@ -521,9 +507,14 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // The action bar home/up action should open or close the drawer.
+        Log.i(TAG, "option selected : " + item.getItemId()
+        );
         switch (item.getItemId()) {
             case android.R.id.home:
                 mDrawer.openDrawer(GravityCompat.START);
+                return true;
+            case R.id.scanning_button:
+                changeScanStatus(item);
                 return true;
         }
 
@@ -551,7 +542,9 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
     public void onStopTrackingTouch(SeekBar seekBar) {
     }
 
-    private void setData(List<Integer> valueList) {
+    private void setData(List<Integer> valueList, String format) {
+
+        mChart.setVisibility(View.VISIBLE);
 
         ArrayList<String> xVals = new ArrayList<String>();
         ArrayList<BarEntry> yVals1 = new ArrayList<BarEntry>();
@@ -561,7 +554,12 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
             yVals1.add(new BarEntry(valueList.get(i), i));
         }
 
-        BarDataSet set1 = new BarDataSet(yVals1, "history");
+        String legend = "reception rate per second";
+
+        if (!format.equals("%"))
+            legend = "packet count per second";
+
+        BarDataSet set1 = new BarDataSet(yVals1, legend);
         set1.setBarSpacePercent(35f);
         set1.setColor(Color.parseColor("#0288D1"));
 
@@ -572,6 +570,13 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
         data.setValueTextSize(10f);
 
         data.setDrawValues(false);
+
+        YAxisValueFormatter custom = new DataAxisFormatter(format);
+        YAxis leftAxis = mChart.getAxisLeft();
+        YAxis rightAxis = mChart.getAxisRight();
+
+        leftAxis.setValueFormatter(custom);
+        rightAxis.setValueFormatter(custom);
 
         mChart.setData(data);
     }
@@ -603,23 +608,22 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
      */
     public void triggerNewScan() {
 
-        if (progress_bar != null) {
+        if (currentService != null && !currentService.isScanning()) {
 
-            if (currentService != null && !currentService.isScanning()) {
-
+                /*
                 if (progress_bar != null) {
                     progress_bar.setEnabled(true);
                     progress_bar.setVisibility(View.VISIBLE);
                 }
+                */
 
-                Log.i(TAG, "START SCAN");
+            Log.i(TAG, "START SCAN");
 
-                currentService.disconnectall();
-                currentService.startScan();
+            currentService.disconnectall();
+            currentService.startScan();
 
-            } else {
-                Toast.makeText(RFdroidActivity.this, "Scanning already engaged...", Toast.LENGTH_SHORT).show();
-            }
+        } else {
+            Toast.makeText(RFdroidActivity.this, "Scanning already engaged...", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -629,36 +633,20 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
         Log.i(TAG, "RFdroidActivity onDestroy");
         //currentService.disconnect(deviceAddress);
         unregisterReceiver(mGattUpdateReceiver);
+
+        try {
+            if (bound) {
+                unbindService(mServiceConnection);
+                bound = false;
+            }
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void onResume() {
         super.onResume();
-
-        toSecondLevel = false;
-
-        if (mBluetoothAdapter.isEnabled()) {
-
-            Intent intent = new Intent(this, RFdroidService.class);
-
-            // bind the service to current activity and create it if it didnt exist before
-            //startService(intent);
-            bound = bindService(intent, mServiceConnection, BIND_AUTO_CREATE);
-        }
-
-        scheduler.schedule(new Runnable() {
-
-            @Override
-            public void run() {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        discreteSeekBar.showFloater(250);
-                    }
-                });
-
-            }
-        }, 500, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -670,34 +658,20 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
     protected void onPause() {
         super.onPause();
 
-        if (!toSecondLevel) {
-
-            if (currentService != null) {
-                currentService.disconnectall();
-            }
-        }
-
         if (currentService != null) {
-            if (currentService.isScanning())
+            currentService.disconnectall();
+
+            if (currentService.isScanning()) {
+                /*
+                if (progress_bar != null) {
+                    progress_bar.setEnabled(false);
+                    progress_bar.setVisibility(View.GONE);
+                }
+                */
                 currentService.stopScan();
-        }
-
-        try {
-            if (bound) {
-                unbindService(mServiceConnection);
-                bound = false;
             }
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
         }
-
         closeDialog();
-        discreteSeekBar.hideFloater(1);
-
-        if (measurementTask != null) {
-            measurementTask.cancel(true);
-            measurementTask = null;
-        }
     }
 
     private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
@@ -722,6 +696,7 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
                         intervalTv != null &&
                         globalReceptionRateTv != null) {
 
+                    adInterval = btDevice.getAdvertizingInterval();
                     discreteSeekBar.setProgress(btDevice.getAdvertizingInterval() / 5);
                     intervalTv.setText("Interval - " + btDevice.getAdvertizingInterval() + "ms");
                     globalReceptionRateTv.setText("0%");
@@ -758,52 +733,14 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
                             public void onPushFailure() {
                                 Log.i(TAG, "onPushFailure");
                                 currentService.disconnect(deviceAddress);
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        closeDialog();
-                                        triggerNewScan();
-                                        scheduler.schedule(new Runnable() {
-
-                                            @Override
-                                            public void run() {
-                                                runOnUiThread(new Runnable() {
-                                                    @Override
-                                                    public void run() {
-                                                        discreteSeekBar.showFloater(250);
-                                                    }
-                                                });
-
-                                            }
-                                        }, 500, TimeUnit.MILLISECONDS);
-                                    }
-                                });
+                                refreshViewOnError();
                             }
 
                             @Override
                             public void onPushSuccess() {
                                 Log.i(TAG, "onPushSuccess");
                                 currentService.disconnect(deviceAddress);
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        closeDialog();
-                                        triggerNewScan();
-                                        scheduler.schedule(new Runnable() {
-
-                                            @Override
-                                            public void run() {
-                                                runOnUiThread(new Runnable() {
-                                                    @Override
-                                                    public void run() {
-                                                        discreteSeekBar.showFloater(250);
-                                                    }
-                                                });
-
-                                            }
-                                        }, 500, TimeUnit.MILLISECONDS);
-                                    }
-                                });
+                                refreshViewOnSucccess();
                             }
                         });
                     }
@@ -811,6 +748,60 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
             }
         }
     };
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        Log.i(TAG, "focus : " + hasFocus);
+        if (hasFocus) {
+            new Handler().post(new Runnable() {
+                @Override
+                public void run() {
+                    discreteSeekBar.showFloater(250);
+                }
+            });
+        } else {
+            discreteSeekBar.hideFloater(250);
+        }
+    }
+
+    private void refreshViewOnError() {
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+
+                closeDialog();
+                triggerNewScan();
+                new Handler().post(new Runnable() {
+                    @Override
+                    public void run() {
+                        discreteSeekBar.showFloater(250);
+                    }
+                });
+            }
+        });
+    }
+
+    private void refreshViewOnSucccess() {
+
+        Log.i(TAG, "refreshViewOnSucccess");
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+
+                closeDialog();
+                triggerNewScan();
+
+                new Handler().post(new Runnable() {
+                    @Override
+                    public void run() {
+                        discreteSeekBar.showFloater(250);
+                    }
+                });
+            }
+        });
+    }
 
     /**
      * Manage Bluetooth Service lifecycle
@@ -827,68 +818,15 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
             currentService.clearScanningList();
 
             currentService.setADListener(RFdroidActivity.this);
+            currentService.setScheduledMeasureListener(RFdroidActivity.this);
 
             triggerNewScan();
-
-            measurementTask = scheduler.scheduleAtFixedRate(new Runnable() {
-                @Override
-                public void run() {
-
-                    if (btDevice != null && btDevice.getAdvertizingInterval() > 0 && history.size() > 0) {
-
-                        int packetReceptionRate = calculateReceptionRate();
-
-                        List<Long> historyCopy = new ArrayList<Long>(history);
-                        int rateCurrentSecond = calculateRateLastMillis(1000, historyCopy);
-
-                        if (packetReceptionRate > 100)
-                            packetReceptionRate = 100;
-
-                        globalSumPerSecond.add(rateCurrentSecond);
-
-                        final int finalPacketReceptionRate = packetReceptionRate;
-
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                samplingTimeTv.setText(getSamplingTime(new Date().getTime()) + "s");
-                                globalReceptionRateTv.setText(finalPacketReceptionRate + "%");
-                                setData(globalSumPerSecond);
-                                mChart.invalidate();
-                                averagePacketReceivedTv.setText("" + getAveragePacket(new Date().getTime()) + " in 1 second");
-                            }
-                        });
-                    }
-                }
-            }, 0, 1, TimeUnit.SECONDS);
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
         }
     };
-
-    private int calculateReceptionRate() {
-        long ts = new Date().getTime();
-        return (int) ((history.size() * 100) / ((ts - history.get(0)) / btDevice.getAdvertizingInterval()));
-    }
-
-    private int calculateRateLastMillis(int millis, List<Long> historyList) {
-
-        long currentTS = new Date().getTime() - millis;
-
-        int count = 0;
-        boolean control = false;
-
-        for (int i = historyList.size() - 1; i >= 0 && !control; i--) {
-
-            if (historyList.get(i) < currentTS)
-                control = true;
-            else
-                count++;
-        }
-        return (int) ((count * 100) / (millis / btDevice.getAdvertizingInterval()));
-    }
 
     /**
      * add filter to intent to receive notification from bluetooth service
@@ -906,16 +844,14 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
     }
 
     @Override
-    public void onADframeReceived(String deviceAdress) {
+    public void onADframeReceived(final long time, final List<Long> history) {
 
-        final Date time = new Date();
-        history.add(time.getTime());
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 lastPacketReceivedTv.setText(sf.format(time));
                 if (btDevice != null && history.size() > 0) {
-                    totalPacketReceiveTv.setText("" + history.size() + " / " + ((time.getTime() - history.get(0)) / btDevice.getAdvertizingInterval()));
+                    totalPacketReceiveTv.setText("" + history.size() + " / " + ((time - history.get(0)) / btDevice.getAdvertizingInterval()));
                 } else {
                     totalPacketReceiveTv.setText("" + history.size());
                 }
@@ -923,18 +859,44 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
         });
     }
 
-    private float getAveragePacket(long currentTS) {
+    @Override
+    public void onNewMeasure(final long samplingTime,
+                             final int finalPacketReceptionRate,
+                             final List<Integer> globalSumPerSecond,
+                             final List<Integer> globalPacketReceivedPerSecond,
+                             final float averagePacket) {
 
-        if (history.size() > 0) {
-            if ((currentTS - history.get(0)) != 0) {
-                return ((history.size() * 1000) / ((currentTS - history.get(0))));
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                samplingTimeTv.setText(samplingTime + "s");
+                globalReceptionRateTv.setText(finalPacketReceptionRate + "%");
+                if (dataChartType == DataChartType.RECEPTION_RATE)
+                    setData(globalSumPerSecond, "%");
+                else
+                    setData(globalPacketReceivedPerSecond, "");
+                mChart.invalidate();
+                averagePacketReceivedTv.setText("" + String.format("%.2f", averagePacket) + " in 1 second");
             }
-            return 1;
-        }
-        return 0;
+        });
     }
 
-    private long getSamplingTime(long ts) {
-        return (ts - history.get(0)) / 1000;
+    @Override
+    public void onMeasureClear() {
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                initTv();
+                mChart.setVisibility(View.GONE);
+                if (currentService != null && currentService.getBtDevice() != null) {
+                    currentService.getBtDevice().setAdvertizingInterval(adInterval);
+                    RFdroidActivity.this.btDevice.setAdvertizingInterval(adInterval);
+                    discreteSeekBar.setProgress(RFdroidActivity.this.btDevice.getAdvertizingInterval() / 5);
+                    intervalTv.setText("Interval - " + RFdroidActivity.this.btDevice.getAdvertizingInterval() + "ms");
+                    globalReceptionRateTv.setText("0%");
+                }
+            }
+        });
     }
 }

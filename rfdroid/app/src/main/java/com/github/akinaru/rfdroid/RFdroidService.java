@@ -28,19 +28,30 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
+import android.util.Log;
 
 import com.github.akinaru.rfdroid.bluetooth.BluetoothCustomManager;
 import com.github.akinaru.rfdroid.bluetooth.connection.IBluetoothDeviceConn;
+import com.github.akinaru.rfdroid.bluetooth.events.BluetoothObject;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Service persisting bluetooth connection
  *
  * @author Bertrand Martel
  */
-public class RFdroidService extends Service {
+public class RFdroidService extends Service implements IMeasurement {
+
+    private String TAG = RFdroidService.class.getSimpleName();
 
     /**
      * Service binder
@@ -49,6 +60,32 @@ public class RFdroidService extends Service {
 
     public void setADListener(IADListener listener) {
         btManager.setADListener(listener);
+    }
+
+    private IScheduledMeasureListener scheduledMeasureListener = null;
+
+    private BluetoothObject btDevice = null;
+
+    @Override
+    public List<Long> getHistoryList() {
+        return history;
+    }
+
+    @Override
+    public void setBtDevice(BluetoothObject btDevice) {
+        this.btDevice = btDevice;
+    }
+
+    public BluetoothObject getBtDevice() {
+        return btDevice;
+    }
+
+    public List<Integer> getGlobalSumPerSecond() {
+        return globalSumPerSecond;
+    }
+
+    public List<Integer> getGlobalPacketReceivedPerSecond() {
+        return globalPacketReceivedPerSecond;
     }
 
     /*
@@ -62,14 +99,141 @@ public class RFdroidService extends Service {
 
     private BluetoothCustomManager btManager = null;
 
+    private ScheduledExecutorService executor;
+
+    private ScheduledFuture<?> measurementTask;
+
+    private List<Long> history = new ArrayList<>();
+    private List<Integer> globalSumPerSecond = new ArrayList<>();
+    private List<Integer> globalPacketReceivedPerSecond = new ArrayList<>();
+
     @Override
     public void onCreate() {
 
         //initiate bluetooth manager object used to manage all Android Bluetooth API
-        btManager = new BluetoothCustomManager(this);
+        btManager = new BluetoothCustomManager(this, this);
 
         //initialize bluetooth adapter
         btManager.init(this);
+        executor = Executors.newScheduledThreadPool(1);
+
+        setMeasurementTask();
+    }
+
+    private void setMeasurementTask() {
+
+        if (measurementTask != null) {
+            measurementTask.cancel(true);
+            measurementTask = null;
+        }
+        history.clear();
+        globalSumPerSecond.clear();
+        globalPacketReceivedPerSecond.clear();
+
+        if (scheduledMeasureListener != null)
+            scheduledMeasureListener.onMeasureClear();
+
+        measurementTask = executor.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+
+                if (btDevice != null && btDevice.getAdvertizingInterval() > 0 && history.size() > 0) {
+
+                    final long ts = new Date().getTime();
+                    final List<Long> historyCopy = new ArrayList<Long>(history);
+
+                    int packetReceptionRate = calculateReceptionRate(historyCopy, ts);
+
+                    int rateCurrentSecond = calculateRateLastMillis(1000, historyCopy, ts);
+
+                    globalSumPerSecond.add(rateCurrentSecond);
+
+                    int totalPacketReceived = calculateTotalPacketReceivedMillis(1000, historyCopy, ts);
+
+                    globalPacketReceivedPerSecond.add(totalPacketReceived);
+
+                    if (packetReceptionRate > 100)
+                        packetReceptionRate = 100;
+
+                    final int finalPacketReceptionRate = packetReceptionRate;
+
+                    if (scheduledMeasureListener != null) {
+                        scheduledMeasureListener.onNewMeasure(getSamplingTime(ts),
+                                finalPacketReceptionRate,
+                                globalSumPerSecond,
+                                globalPacketReceivedPerSecond,
+                                getAveragePacket(ts, historyCopy));
+                    }
+                }
+            }
+        }, 0, 1, TimeUnit.SECONDS);
+    }
+
+    private float getAveragePacket(long currentTS, List<Long> historyList) {
+
+        if (history.size() > 0) {
+            if ((currentTS - history.get(0)) != 0) {
+                return ((historyList.size() * 1000) / (float) ((currentTS - historyList.get(0))));
+            }
+            return 1;
+        }
+        return 0;
+    }
+
+    private long getSamplingTime(long ts) {
+        return (ts - history.get(0)) / 1000;
+    }
+
+    private int calculateReceptionRate(List<Long> historyList, long ts) {
+
+        if (btDevice.getAdvertizingInterval() >= (ts - historyList.get(0)))
+            return 100;
+        return (int) ((historyList.size() * 100) / ((ts - historyList.get(0)) / btDevice.getAdvertizingInterval()));
+    }
+
+    private int calculateTotalPacketReceivedMillis(int millis, List<Long> historyList, long ts) {
+
+        long currentTS = ts - millis;
+
+        int count = 0;
+        boolean control = false;
+
+        for (int i = historyList.size() - 1; i >= 0 && !control; i--) {
+
+            if (historyList.get(i) <= currentTS)
+                control = true;
+            else {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private int calculateRateLastMillis(int millis, List<Long> historyList, long ts) {
+
+        long currentTS = ts - millis;
+
+        int count = 0;
+        boolean control = false;
+
+        for (int i = historyList.size() - 1; i >= 0 && !control; i--) {
+
+            if (historyList.get(i) <= currentTS)
+                control = true;
+            else {
+                count++;
+            }
+        }
+        return (int) ((count * 100) / (millis / btDevice.getAdvertizingInterval()));
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (measurementTask != null) {
+            measurementTask.cancel(true);
+            measurementTask = null;
+        }
     }
 
     @Override
@@ -81,11 +245,19 @@ public class RFdroidService extends Service {
         return btManager.getScanningList();
     }
 
+    public void setScheduledMeasureListener(IScheduledMeasureListener listener) {
+        scheduledMeasureListener = listener;
+    }
+
     public boolean isScanning() {
         return btManager.isScanning();
     }
 
     public void stopScan() {
+        if (measurementTask != null) {
+            measurementTask.cancel(true);
+            measurementTask = null;
+        }
         btManager.stopScan();
     }
 
@@ -94,6 +266,7 @@ public class RFdroidService extends Service {
     }
 
     public boolean startScan() {
+        setMeasurementTask();
         return btManager.scanLeDevice();
     }
 

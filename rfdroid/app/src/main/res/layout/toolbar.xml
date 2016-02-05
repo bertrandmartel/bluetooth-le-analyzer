@@ -4,15 +4,8 @@
     android:id="@+id/toolbar_item"
     android:layout_width="match_parent"
     android:layout_height="?actionBarSize"
-    android:background="?attr/colorPrimaryDark"
+    android:background="#0288D1"
     android:fitsSystemWindows="true"
     app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
-
-    <ProgressBar
-        android:id="@+id/scanningProgress"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="right"
-        android:indeterminate="true" />
 
 </android.support.v7.widget.Toolbar>
