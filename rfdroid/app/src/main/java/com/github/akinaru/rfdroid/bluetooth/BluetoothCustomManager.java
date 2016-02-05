@@ -35,6 +35,7 @@ import android.content.Intent;
 import android.os.Handler;
 import android.util.Log;
 
+import com.github.akinaru.rfdroid.IADListener;
 import com.github.akinaru.rfdroid.bluetooth.connection.BluetoothDeviceConn;
 import com.github.akinaru.rfdroid.bluetooth.connection.IBluetoothDeviceConn;
 import com.github.akinaru.rfdroid.bluetooth.events.BluetoothEvents;
@@ -80,14 +81,7 @@ public class BluetoothCustomManager implements IBluetoothCustomManager {
     private static final int KEEP_ALIVE_TIME = 5;
 
     // set time unit in seconds
-    private static final TimeUnit KEEP_ALIVE_TIME_UNIT;
-
-    static {
-
-        // The time unit for "keep alive" is in seconds
-        KEEP_ALIVE_TIME_UNIT = TimeUnit.SECONDS;
-
-    }
+    private static final TimeUnit KEEP_ALIVE_TIME_UNIT = TimeUnit.SECONDS;
 
     LinkedBlockingQueue gattWorkingQueue = new LinkedBlockingQueue<Runnable>();
 
@@ -141,6 +135,7 @@ public class BluetoothCustomManager implements IBluetoothCustomManager {
     private BluetoothAdapter.LeScanCallback scanCallback = null;
 
     private Context context = null;
+    private IADListener adListener = null;
 
     /**
      * Build bluetooth manager
@@ -169,52 +164,58 @@ public class BluetoothCustomManager implements IBluetoothCustomManager {
 
                 if (device.getAddress() != null &&
                         device.getName() != null &&
-                        device.getName().equals("RFdroid") &&
-                        !scanningList.containsKey(device.getAddress())) {
+                        device.getName().equals("RFdroid")) {
 
-                    Log.i(TAG, "found a RFdroid");
+                    if (scanningList.containsKey(device.getAddress())) {
 
-                    List<ADStructure> structures = ADPayloadParser.getInstance().parse(scanRecord);
+                        if (adListener != null) {
+                            adListener.onADframeReceived(device.getAddress());
+                        }
+                    } else {
+                        Log.i(TAG, "found a RFdroid");
 
-                    int advInterval = -1;
+                        List<ADStructure> structures = ADPayloadParser.getInstance().parse(scanRecord);
 
-                    for (ADStructure structure : structures) {
+                        int advInterval = -1;
 
-                        if (structure instanceof ADManufacturerSpecific) {
+                        for (ADStructure structure : structures) {
 
-                            ADManufacturerSpecific data = (ADManufacturerSpecific) structure;
+                            if (structure instanceof ADManufacturerSpecific) {
 
-                            if (data.getData().length == 9) {
+                                ADManufacturerSpecific data = (ADManufacturerSpecific) structure;
 
-                                byte[] name = new byte[7];
-                                System.arraycopy(data.getData(), 0, name, 0, 7);
+                                if (data.getData().length == 9) {
 
-                                String nameStr = new String(name);
-                                if (nameStr.equals("RFdroid")) {
-                                    advInterval = (data.getData()[7] << 8) + (data.getData()[8] & 0xFF);
-                                    Log.i(TAG, "current scan interval : " + advInterval);
+                                    byte[] name = new byte[7];
+                                    System.arraycopy(data.getData(), 0, name, 0, 7);
+
+                                    String nameStr = new String(name);
+                                    if (nameStr.equals("RFdroid")) {
+                                        advInterval = (data.getData()[7] << 8) + (data.getData()[8] & 0xFF);
+                                        Log.i(TAG, "current scan interval : " + advInterval);
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    if (advInterval != -1) {
+                        if (advInterval != -1) {
 
-                        scanningList.put(device.getAddress(), device);
+                            scanningList.put(device.getAddress(), device);
 
-                        try {
-                            JSONObject object = new JSONObject();
-                            object.put(JsonConstants.BT_ADDRESS, device.getAddress());
-                            object.put(JsonConstants.BT_DEVICE_NAME, device.getName());
-                            object.put(JsonConstants.BT_ADVERTISING_INTERVAL, advInterval);
+                            try {
+                                JSONObject object = new JSONObject();
+                                object.put(JsonConstants.BT_ADDRESS, device.getAddress());
+                                object.put(JsonConstants.BT_DEVICE_NAME, device.getName());
+                                object.put(JsonConstants.BT_ADVERTISING_INTERVAL, advInterval);
 
-                            ArrayList<String> deviceInfo = new ArrayList<>();
-                            deviceInfo.add(object.toString());
+                                ArrayList<String> deviceInfo = new ArrayList<>();
+                                deviceInfo.add(object.toString());
 
-                            broadcastUpdateStringList(BluetoothEvents.BT_EVENT_DEVICE_DISCOVERED, deviceInfo);
+                                broadcastUpdateStringList(BluetoothEvents.BT_EVENT_DEVICE_DISCOVERED, deviceInfo);
 
-                        } catch (JSONException e) {
-                            e.printStackTrace();
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
                         }
                     }
                 }
@@ -238,7 +239,7 @@ public class BluetoothCustomManager implements IBluetoothCustomManager {
         if (!scanning) {
 
             broadcastUpdate(BluetoothEvents.BT_EVENT_SCAN_START);
-            
+
             scanning = true;
 
             return mBluetoothAdapter.startLeScan(scanCallback);
@@ -480,4 +481,7 @@ public class BluetoothCustomManager implements IBluetoothCustomManager {
         return scanningList;
     }
 
+    public void setADListener(IADListener ADListener) {
+        this.adListener = ADListener;
+    }
 }

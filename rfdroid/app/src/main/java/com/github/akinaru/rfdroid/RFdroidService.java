@@ -47,6 +47,10 @@ public class RFdroidService extends Service {
      */
     private final IBinder mBinder = new LocalBinder();
 
+    public void setADListener(IADListener listener) {
+        btManager.setADListener(listener);
+    }
+
     /*
      * LocalBInder that render public getService() for public access
      */
