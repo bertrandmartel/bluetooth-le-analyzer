@@ -21,15 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.akinaru.rfdroid;
+package com.github.akinaru.rfdroid.service;
 
 import android.app.Service;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
-import android.util.Log;
 
+import com.github.akinaru.rfdroid.inter.IADListener;
+import com.github.akinaru.rfdroid.inter.IMeasurement;
+import com.github.akinaru.rfdroid.inter.IScheduledMeasureListener;
 import com.github.akinaru.rfdroid.bluetooth.BluetoothCustomManager;
 import com.github.akinaru.rfdroid.bluetooth.connection.IBluetoothDeviceConn;
 import com.github.akinaru.rfdroid.bluetooth.events.BluetoothObject;

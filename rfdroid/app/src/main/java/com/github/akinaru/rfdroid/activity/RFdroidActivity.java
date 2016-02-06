@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.akinaru.rfdroid;
+package com.github.akinaru.rfdroid.activity;
 
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
@@ -60,6 +60,12 @@ import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.github.akinaru.rfdroid.chart.DataAxisFormatter;
+import com.github.akinaru.rfdroid.chart.DataChartType;
+import com.github.akinaru.rfdroid.inter.IADListener;
+import com.github.akinaru.rfdroid.inter.IScheduledMeasureListener;
+import com.github.akinaru.rfdroid.R;
+import com.github.akinaru.rfdroid.service.RFdroidService;
 import com.github.akinaru.rfdroid.bluetooth.events.BluetoothEvents;
 import com.github.akinaru.rfdroid.bluetooth.events.BluetoothObject;
 import com.github.akinaru.rfdroid.bluetooth.listener.IPushListener;

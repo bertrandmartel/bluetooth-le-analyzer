@@ -1,4 +1,4 @@
-package com.github.akinaru.rfdroid;
+package com.github.akinaru.rfdroid.inter;
 
 import com.github.akinaru.rfdroid.bluetooth.events.BluetoothObject;
 
@@ -9,7 +9,7 @@ import java.util.List;
  */
 public interface IMeasurement {
 
-    public List<Long> getHistoryList();
+    public List<Long> gedtHistoryList();
 
     public void setBtDevice(BluetoothObject btDevice);
 }

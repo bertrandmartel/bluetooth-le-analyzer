@@ -1,4 +1,4 @@
-package com.github.akinaru.rfdroid;
+package com.github.akinaru.rfdroid.chart;
 
 /**
  * Created by akinaru on 05/02/16.

@@ -1,4 +1,4 @@
-package com.github.akinaru.rfdroid;
+package com.github.akinaru.rfdroid.chart;
 
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.formatter.YAxisValueFormatter;

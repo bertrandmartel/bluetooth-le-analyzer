@@ -35,14 +35,14 @@ import android.content.Intent;
 import android.os.Handler;
 import android.util.Log;
 
-import com.github.akinaru.rfdroid.IADListener;
-import com.github.akinaru.rfdroid.IMeasurement;
 import com.github.akinaru.rfdroid.bluetooth.connection.BluetoothDeviceConn;
 import com.github.akinaru.rfdroid.bluetooth.connection.IBluetoothDeviceConn;
 import com.github.akinaru.rfdroid.bluetooth.events.BluetoothEvents;
 import com.github.akinaru.rfdroid.bluetooth.events.BluetoothObject;
 import com.github.akinaru.rfdroid.bluetooth.listener.IPushListener;
 import com.github.akinaru.rfdroid.constant.JsonConstants;
+import com.github.akinaru.rfdroid.inter.IADListener;
+import com.github.akinaru.rfdroid.inter.IMeasurement;
 import com.github.akinaru.rfdroid.utils.ManualResetEvent;
 import com.neovisionaries.bluetooth.ble.advertising.ADManufacturerSpecific;
 import com.neovisionaries.bluetooth.ble.advertising.ADPayloadParser;

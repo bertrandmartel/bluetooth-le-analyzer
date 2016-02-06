@@ -1,4 +1,4 @@
-package com.github.akinaru.rfdroid;
+package com.github.akinaru.rfdroid.inter;
 
 import java.util.List;
 

@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.akinaru.rfdroid;
+package com.github.akinaru.rfdroid.adapter;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -30,6 +30,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
+import com.github.akinaru.rfdroid.R;
 import com.github.akinaru.rfdroid.bluetooth.events.BluetoothObject;
 
 import java.util.ArrayList;
