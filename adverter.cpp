@@ -1,7 +1,7 @@
 #include "Arduino.h"
 #include <RFduinoBLE.h>
 
-uint16_t advertisement_interval = 20;
+uint16_t advertisement_interval = 80;
 
 int interupt_pin = 31;
 
@@ -32,7 +32,7 @@ uint8_t advdata[] =
   0x69,
   0x64,
   0x00,
-  0x14
+  0x50
 };
 
 void advertise(uint16_t interval) {
