@@ -9,7 +9,11 @@ import java.util.List;
  */
 public interface IMeasurement {
 
-    public List<Long> gedtHistoryList();
+    public List<Long> getHistoryList();
 
     public void setBtDevice(BluetoothObject btDevice);
+
+    public BluetoothObject getBtDevice();
+
+    public boolean isSelectionningDevice();
 }

@@ -28,16 +28,13 @@ import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -51,24 +48,19 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewTreeObserver;
-import android.view.Window;
-import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ListView;
 import android.widget.ProgressBar;
-import android.widget.ScrollView;
-import android.widget.SeekBar;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.github.akinaru.rfdroid.R;
+import com.github.akinaru.rfdroid.adapter.ScanItemArrayAdapter;
 import com.github.akinaru.rfdroid.bluetooth.events.BluetoothEvents;
 import com.github.akinaru.rfdroid.bluetooth.events.BluetoothObject;
-import com.github.akinaru.rfdroid.bluetooth.listener.IPushListener;
-import com.github.akinaru.rfdroid.bluetooth.rfduino.IRfduinoDevice;
 import com.github.akinaru.rfdroid.chart.DataAxisFormatter;
-import com.github.akinaru.rfdroid.chart.DataChartType;
 import com.github.akinaru.rfdroid.inter.IADListener;
 import com.github.akinaru.rfdroid.inter.IScheduledMeasureListener;
 import com.github.akinaru.rfdroid.service.RFdroidService;
@@ -81,8 +73,6 @@ import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.formatter.YAxisValueFormatter;
 import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
 
-import org.adw.library.widgets.discreteseekbar.DiscreteSeekBar;
-
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -94,7 +84,7 @@ import java.util.concurrent.ScheduledExecutorService;
  *
  * @author Bertrand Martel
  */
-public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener, IADListener, IScheduledMeasureListener {
+public class BtDevicesActivity extends AppCompatActivity implements IADListener, IScheduledMeasureListener {
 
     /**
      * debug tag
@@ -103,11 +93,7 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
 
     private ProgressDialog dialog = null;
 
-    private ProgressDialog deviceFoundDialog = null;
-
     private boolean bound = false;
-
-    private int adInterval = 20;
 
     /**
      * define if bluetooth is enabled on device
@@ -134,16 +120,12 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
 
     private NavigationView nvDrawer;
 
-    private DiscreteSeekBar discreteSeekBar;
-
     private ScheduledExecutorService scheduler;
 
     private TableLayout tablelayout;
 
     private BluetoothObject btDevice = null;
 
-    private TextView intervalTv = null;
-    private TextView globalReceptionRateTv = null;
     private TextView lastPacketReceivedTv = null;
     private TextView samplingTimeTv = null;
     private TextView totalPacketReceiveTv = null;
@@ -151,60 +133,32 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
 
     private SimpleDateFormat sf = new SimpleDateFormat("HH:mm:ss.SSS");
 
-    private DataChartType dataChartType = DataChartType.RECEPTION_RATE;
-
     private SharedPreferences sharedpreferences;
 
     private final static String PREFERENCES = "storage";
+
+    /**
+     * list of device to display
+     */
+    private ListView scanningListView = null;
+
+    private ScanItemArrayAdapter scanningAdapter = null;
+
+    private int list_item_position = -1;
+
+    private TextView deviceNameTv = null;
+    private TextView deviceAddressTv = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_rfdroid);
+        setContentView(R.layout.activity_btdevices);
 
-        deviceFoundDialog = ProgressDialog.show(RFdroidActivity.this, "", "Looking for RFdroid ...", true);
-        deviceFoundDialog.setCancelable(false);
-        deviceFoundDialog.setOnKeyListener(new DialogInterface.OnKeyListener() {
-            @Override
-            public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
-                if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_BACK) {
-                    dialog.dismiss();
-                    onBackPressed();
-                    return true;
-                }
-                return false;
-            }
-        });
-
-        /*
-        Window window = getWindow();
-        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-
-        if (Build.VERSION.SDK_INT >= 21) {
-            window.setStatusBarColor(getResources().getColor(R.color.default_color));
-        }
-        */
-
-        final ScrollView view = (ScrollView) findViewById(R.id.scrollview);
-        view.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
-            @Override
-            public void onScrollChanged() {
-                if (view.getScrollX() == 0 && view.getScrollY() == 0) {
-                    discreteSeekBar.showFloater(250);
-                } else {
-                    discreteSeekBar.hideFloater(1);
-                }
-            }
-        });
+        deviceNameTv = (TextView) findViewById(R.id.device_name);
+        deviceAddressTv = (TextView) findViewById(R.id.device_address);
 
         sharedpreferences = getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
-        int dataChartTypeVal = sharedpreferences.getInt("dataChartType", DataChartType.RECEPTION_RATE.ordinal());
-
-        if (dataChartTypeVal == DataChartType.PACKET_NUMBER.ordinal()) {
-            dataChartType = DataChartType.PACKET_NUMBER;
-        }
 
         tablelayout = (TableLayout) findViewById(R.id.tablelayout);
 
@@ -219,7 +173,7 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
         toolbar = (Toolbar) findViewById(R.id.toolbar_item);
 
         setSupportActionBar(toolbar);
-        getSupportActionBar().setTitle("RFdroid - reception rate");
+        getSupportActionBar().setTitle("BLE device - reception rate");
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         toolbar.inflateMenu(R.menu.toolbar_menu);
@@ -232,6 +186,8 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
         mDrawer.setDrawerListener(drawerToggle);
 
         nvDrawer = (NavigationView) findViewById(R.id.nvView);
+        nvDrawer.setVisibility(View.GONE);
+        mDrawer.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
 
         // Setup drawer view
         setupDrawerContent(nvDrawer);
@@ -300,101 +256,6 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
 
         mChart.setVisibility(View.GONE);
 
-        discreteSeekBar = (DiscreteSeekBar) findViewById(R.id.discrete1);
-        discreteSeekBar.keepShowingPopup(true);
-
-        discreteSeekBar.setNumericTransformer(new DiscreteSeekBar.NumericTransformer() {
-            @Override
-            public int transform(int value) {
-                return value * 5;
-            }
-        });
-        discreteSeekBar.setOnProgressChangeListener(new DiscreteSeekBar.OnProgressChangeListener() {
-
-            @Override
-            public void onProgressChanged(DiscreteSeekBar seekBar, int value, boolean fromUser) {
-
-            }
-
-            @Override
-            public void onStartTrackingTouch(DiscreteSeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(DiscreteSeekBar seekBar) {
-
-                adInterval = seekBar.getProgress() * 5;
-
-                Log.i(TAG, "setting AD interval to " + adInterval + "ms");
-
-                runOnUiThread(new Runnable() {
-
-                    @Override
-                    public void run() {
-
-                        if (btDevice != null && !btDevice.getDeviceAddress().equals("")) {
-
-                            final String deviceAddress = btDevice.getDeviceAddress();
-
-                            if (currentService.isScanning()) {
-
-                                currentService.stopScan();
-
-                                /*
-                                if (progress_bar != null) {
-                                    progress_bar.setEnabled(false);
-                                    progress_bar.setVisibility(View.GONE);
-                                }
-                                */
-                            }
-
-                            if (!currentService.getConnectionList().containsKey(deviceAddress) ||
-                                    !currentService.getConnectionList().get(deviceAddress).isConnected()) {
-
-                                dialog = ProgressDialog.show(RFdroidActivity.this, "", "Connecting ...", true);
-
-                                currentService.connect(deviceAddress);
-
-                            } else {
-
-                                if (!currentService.getConnectionList().get(deviceAddress).isConnected()) {
-
-                                    currentService.connect(deviceAddress);
-
-                                } else {
-
-                                    if (currentService.getConnectionList().get(deviceAddress).getDevice() instanceof IRfduinoDevice) {
-
-                                        IRfduinoDevice device = (IRfduinoDevice) currentService.getConnectionList().get(deviceAddress).getDevice();
-
-                                        device.setAdvertisingInterval(adInterval, new IPushListener() {
-                                            @Override
-                                            public void onPushFailure() {
-                                                Log.i(TAG, "onPushFailure");
-                                                currentService.disconnect(deviceAddress);
-                                                refreshViewOnError();
-                                            }
-
-                                            @Override
-                                            public void onPushSuccess() {
-                                                Log.i(TAG, "onPushSuccess");
-                                                currentService.disconnect(deviceAddress);
-                                                refreshViewOnSucccess();
-                                            }
-                                        });
-                                    }
-                                }
-                            }
-
-                        }
-                    }
-                });
-            }
-        });
-
-        intervalTv = (TextView) findViewById(R.id.interval_head);
-        globalReceptionRateTv = (TextView) findViewById(R.id.global_reception_rate);
         lastPacketReceivedTv = (TextView) findViewById(R.id.last_packet_received_value);
         samplingTimeTv = (TextView) findViewById(R.id.sampling_time_value);
         totalPacketReceiveTv = (TextView) findViewById(R.id.total_packet_received_value);
@@ -416,8 +277,6 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
     }
 
     private void initTv() {
-        intervalTv.setText("-");
-        globalReceptionRateTv.setText("-");
         lastPacketReceivedTv.setText("-");
         samplingTimeTv.setText("-");
         averagePacketReceivedTv.setText("-");
@@ -440,29 +299,10 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
 
         switch (menuItem.getItemId()) {
             case R.id.switch_chart_data: {
-                switchChartData(menuItem);
                 break;
             }
         }
         mDrawer.closeDrawers();
-    }
-
-    private void switchChartData(MenuItem menuItem) {
-
-        if (dataChartType == DataChartType.RECEPTION_RATE) {
-            dataChartType = DataChartType.PACKET_NUMBER;
-            menuItem.setTitle("Switch chart data to 'reception rate'");
-            setData(currentService.getGlobalPacketReceivedPerSecond(), "");
-            mChart.invalidate();
-        } else {
-            dataChartType = DataChartType.RECEPTION_RATE;
-            menuItem.setTitle("Switch chart data to 'packet count'");
-            setData(currentService.getGlobalSumPerSecond(), "%");
-            mChart.invalidate();
-        }
-        SharedPreferences.Editor editor = sharedpreferences.edit();
-        editor.putInt("dataChartType", dataChartType.ordinal());
-        editor.commit();
     }
 
     private void changeScanStatus(MenuItem menuItem) {
@@ -472,7 +312,7 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    Toast.makeText(RFdroidActivity.this, "scanning has stopped", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(BtDevicesActivity.this, "scanning has stopped", Toast.LENGTH_SHORT).show();
                 }
             });
             currentService.stopScan();
@@ -481,9 +321,10 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    Toast.makeText(RFdroidActivity.this, "scanning ...", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(BtDevicesActivity.this, "scanning ...", Toast.LENGTH_SHORT).show();
                 }
             });
+            scanningListView.setItemChecked(-1, true);
             triggerNewScan();
         }
     }
@@ -497,17 +338,7 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
 
     private ActionBarDrawerToggle setupDrawerToggle() {
 
-        return new ActionBarDrawerToggle(this, mDrawer, toolbar, R.string.drawer_open, R.string.drawer_close) {
-
-            @Override
-            public void onDrawerSlide(View drawerView, float slideOffset) {
-                super.onDrawerSlide(drawerView, slideOffset);
-                if (slideOffset > 0)
-                    discreteSeekBar.hideFloater(1);
-                else
-                    discreteSeekBar.showFloater(250);
-            }
-        };
+        return new ActionBarDrawerToggle(this, mDrawer, toolbar, R.string.drawer_open, R.string.drawer_close);
     }
 
     public void altTableRow(int alt_row) {
@@ -552,20 +383,6 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
         drawerToggle.syncState();
-    }
-
-    @Override
-    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-
-        mChart.invalidate();
-    }
-
-    @Override
-    public void onStartTrackingTouch(SeekBar seekBar) {
-    }
-
-    @Override
-    public void onStopTrackingTouch(SeekBar seekBar) {
     }
 
     private void setData(List<Integer> valueList, String format) {
@@ -636,20 +453,20 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
 
         if (currentService != null && !currentService.isScanning()) {
 
-                /*
-                if (progress_bar != null) {
-                    progress_bar.setEnabled(true);
-                    progress_bar.setVisibility(View.VISIBLE);
-                }
-                */
-
             Log.i(TAG, "START SCAN");
+
+            if (scanningAdapter != null) {
+                scanningAdapter.clear();
+                scanningAdapter.notifyDataSetChanged();
+            }
+
+            currentService.clearScanningList();
 
             currentService.disconnectall();
             currentService.startScan();
 
         } else {
-            Toast.makeText(RFdroidActivity.this, "Scanning already engaged...", Toast.LENGTH_SHORT).show();
+            Toast.makeText(BtDevicesActivity.this, "Scanning already engaged...", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -716,19 +533,17 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
 
                 btDevice = BluetoothObject.parseArrayList(intent);
 
-                if (btDevice != null &&
-                        btDevice.getAdvertizingInterval() != -1 &&
-                        discreteSeekBar != null &&
-                        intervalTv != null &&
-                        globalReceptionRateTv != null) {
+                if (btDevice != null) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
 
-                    if (deviceFoundDialog != null)
-                        deviceFoundDialog.dismiss();
-
-                    adInterval = btDevice.getAdvertizingInterval();
-                    discreteSeekBar.setProgress(btDevice.getAdvertizingInterval() / 5);
-                    intervalTv.setText("Interval - " + btDevice.getAdvertizingInterval() + "ms");
-                    globalReceptionRateTv.setText("0%");
+                            if (scanningAdapter != null) {
+                                scanningAdapter.add(btDevice);
+                                scanningAdapter.notifyDataSetChanged();
+                            }
+                        }
+                    });
                 }
 
             } else if (BluetoothEvents.BT_EVENT_DEVICE_DISCONNECTED.equals(action)) {
@@ -744,93 +559,9 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
                 }
 
             } else if (BluetoothEvents.BT_EVENT_DEVICE_CONNECTED.equals(action)) {
-
-                Log.i(TAG, "device connected");
-
-                BluetoothObject btDevice = BluetoothObject.parseArrayList(intent);
-
-                if (btDevice != null && !btDevice.getDeviceAddress().equals("")) {
-
-                    final String deviceAddress = btDevice.getDeviceAddress();
-
-                    if (currentService.getConnectionList().get(deviceAddress).getDevice() instanceof IRfduinoDevice) {
-
-                        IRfduinoDevice device = (IRfduinoDevice) currentService.getConnectionList().get(deviceAddress).getDevice();
-
-                        device.setAdvertisingInterval(adInterval, new IPushListener() {
-                            @Override
-                            public void onPushFailure() {
-                                Log.i(TAG, "onPushFailure");
-                                currentService.disconnect(deviceAddress);
-                                refreshViewOnError();
-                            }
-
-                            @Override
-                            public void onPushSuccess() {
-                                Log.i(TAG, "onPushSuccess");
-                                currentService.disconnect(deviceAddress);
-                                refreshViewOnSucccess();
-                            }
-                        });
-                    }
-                }
             }
         }
     };
-
-    @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        Log.i(TAG, "focus : " + hasFocus);
-        if (hasFocus) {
-            new Handler().post(new Runnable() {
-                @Override
-                public void run() {
-                    discreteSeekBar.showFloater(250);
-                }
-            });
-        } else {
-            discreteSeekBar.hideFloater(250);
-        }
-    }
-
-    private void refreshViewOnError() {
-
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-
-                closeDialog();
-                triggerNewScan();
-                new Handler().post(new Runnable() {
-                    @Override
-                    public void run() {
-                        discreteSeekBar.showFloater(250);
-                    }
-                });
-            }
-        });
-    }
-
-    private void refreshViewOnSucccess() {
-
-        Log.i(TAG, "refreshViewOnSucccess");
-
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-
-                closeDialog();
-                triggerNewScan();
-
-                new Handler().post(new Runnable() {
-                    @Override
-                    public void run() {
-                        discreteSeekBar.showFloater(250);
-                    }
-                });
-            }
-        });
-    }
 
     /**
      * Manage Bluetooth Service lifecycle
@@ -844,19 +575,57 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
 
             currentService = ((RFdroidService.LocalBinder) service).getService();
 
+            currentService.setSelectionningDevice(true);
+
             currentService.clearScanningList();
 
-            currentService.setADListener(RFdroidActivity.this);
-            currentService.setScheduledMeasureListener(RFdroidActivity.this);
+            currentService.setADListener(BtDevicesActivity.this);
+            currentService.setScheduledMeasureListener(BtDevicesActivity.this);
 
-            triggerNewScan();
+            scanningListView = (ListView) findViewById(R.id.scan_list);
 
-            new Handler().post(new Runnable() {
+            final ArrayList<BluetoothObject> list = new ArrayList<>();
+
+            scanningAdapter = new ScanItemArrayAdapter(BtDevicesActivity.this,
+                    android.R.layout.simple_list_item_1, list);
+
+            scanningListView.setAdapter(scanningAdapter);
+
+            scanningListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
                 @Override
-                public void run() {
-                    discreteSeekBar.hideFloater(1);
+                public void onItemClick(AdapterView<?> parent, final View view,
+                                        int position, long id) {
+
+
+                    BluetoothObject btDevice = scanningAdapter.getItem(position);
+
+                    if (currentService.getBtDevice() != null && btDevice != null && !btDevice.getDeviceAddress().equals(currentService.getBtDevice().getDeviceAddress())) {
+                        currentService.stopScan();
+                    }
+
+                    scanningAdapter.notifyDataSetChanged();
+
+                    if (deviceNameTv != null) {
+                        deviceNameTv.setText(btDevice.getDeviceName());
+                        deviceNameTv.setVisibility(View.VISIBLE);
+                    }
+
+                    if (deviceAddressTv != null) {
+                        deviceAddressTv.setText(btDevice.getDeviceAddress());
+                        deviceAddressTv.setVisibility(View.VISIBLE);
+                    }
+
+                    currentService.setBtDevice(btDevice);
+
+                    if (!currentService.isScanning())
+                        triggerNewScan();
+
+                    scanningListView.setVisibility(View.GONE);
                 }
             });
+
+            triggerNewScan();
         }
 
         @Override
@@ -886,11 +655,7 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
             @Override
             public void run() {
                 lastPacketReceivedTv.setText(sf.format(time));
-                if (btDevice != null && history.size() > 0) {
-                    totalPacketReceiveTv.setText("" + history.size() + " / " + ((time - history.get(0)) / btDevice.getAdvertizingInterval()));
-                } else {
-                    totalPacketReceiveTv.setText("" + history.size());
-                }
+                totalPacketReceiveTv.setText("" + history.size());
             }
         });
     }
@@ -906,11 +671,7 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
             @Override
             public void run() {
                 samplingTimeTv.setText(samplingTime + "s");
-                globalReceptionRateTv.setText(finalPacketReceptionRate + "%");
-                if (dataChartType == DataChartType.RECEPTION_RATE)
-                    setData(globalSumPerSecond, "%");
-                else
-                    setData(globalPacketReceivedPerSecond, "");
+                setData(globalPacketReceivedPerSecond, "");
                 mChart.invalidate();
                 averagePacketReceivedTv.setText("" + String.format("%.2f", averagePacket) + " in 1 second");
             }
@@ -925,14 +686,30 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
             public void run() {
                 initTv();
                 mChart.setVisibility(View.GONE);
-                if (currentService != null && currentService.getBtDevice() != null) {
-                    currentService.getBtDevice().setAdvertizingInterval(adInterval);
-                    RFdroidActivity.this.btDevice.setAdvertizingInterval(adInterval);
-                    discreteSeekBar.setProgress(RFdroidActivity.this.btDevice.getAdvertizingInterval() / 5);
-                    intervalTv.setText("Interval - " + RFdroidActivity.this.btDevice.getAdvertizingInterval() + "ms");
-                    globalReceptionRateTv.setText("0%");
-                }
             }
         });
+    }
+
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+
+        if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_BACK) {
+
+            if (scanningListView.getVisibility() == View.VISIBLE) {
+                onBackPressed();
+            } else {
+                if (currentService.isScanning()
+                        )
+                    currentService.stopScan();
+                scanningListView.setVisibility(View.VISIBLE);
+                if (deviceNameTv != null)
+                    deviceNameTv.setVisibility(View.GONE);
+                if (deviceAddressTv != null)
+                    deviceAddressTv.setVisibility(View.GONE);
+            }
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
     }
 }

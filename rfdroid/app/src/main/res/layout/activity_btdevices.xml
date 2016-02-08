@@ -31,41 +31,39 @@
                 android:layout_height="match_parent"
                 android:orientation="vertical">
 
-
-                <org.adw.library.widgets.discreteseekbar.DiscreteSeekBar
-                    android:id="@+id/discrete1"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingLeft="20dp"
-                    android:paddingRight="20dp"
-                    android:paddingTop="60dp"
-                    app:dsb_indicatorColor="#0288D1"
-                    app:dsb_max="100"
-                    app:dsb_min="4"
-                    app:dsb_progressColor="#0288D1"
-                    app:dsb_value="4" />
-
                 <TextView
-                    android:id="@+id/interval_head"
+                    android:id="@+id/device_name"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif"
                     android:gravity="center"
-                    android:paddingBottom="5dp"
-                    android:text="Interval - 20ms"
+                    android:padding="10dp"
+                    android:text=""
                     android:textColor="#212121"
-                    android:textSize="24sp" />
+                    android:textSize="32sp"
+                    android:visibility="gone" />
 
                 <TextView
-                    android:id="@+id/global_reception_rate"
+                    android:id="@+id/device_address"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif"
                     android:gravity="center"
-                    android:paddingBottom="10dp"
-                    android:text="95%"
+                    android:paddingBottom="20dp"
+                    android:paddingLeft="10dp"
+                    android:paddingRight="10dp"
+                    android:text=""
                     android:textColor="#212121"
-                    android:textSize="32sp" />
+                    android:textSize="32sp"
+                    android:visibility="gone" />
+
+
+                <ListView
+                    android:id="@+id/scan_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:choiceMode="singleChoice" />
+
 
                 <TableLayout
                     android:id="@+id/tablelayout"
@@ -207,6 +205,7 @@
                     android:layout_height="250dp"
                     android:layout_marginLeft="10dp"
                     android:layout_marginRight="10dp" />
+
 
             </LinearLayout>
         </ScrollView>

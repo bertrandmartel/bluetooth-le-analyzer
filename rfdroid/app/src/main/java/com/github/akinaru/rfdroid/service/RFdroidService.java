@@ -29,12 +29,12 @@ import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
 
-import com.github.akinaru.rfdroid.inter.IADListener;
-import com.github.akinaru.rfdroid.inter.IMeasurement;
-import com.github.akinaru.rfdroid.inter.IScheduledMeasureListener;
 import com.github.akinaru.rfdroid.bluetooth.BluetoothCustomManager;
 import com.github.akinaru.rfdroid.bluetooth.connection.IBluetoothDeviceConn;
 import com.github.akinaru.rfdroid.bluetooth.events.BluetoothObject;
+import com.github.akinaru.rfdroid.inter.IADListener;
+import com.github.akinaru.rfdroid.inter.IMeasurement;
+import com.github.akinaru.rfdroid.inter.IScheduledMeasureListener;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -68,6 +68,8 @@ public class RFdroidService extends Service implements IMeasurement {
 
     private BluetoothObject btDevice = null;
 
+    private boolean selectionning = false;
+
     @Override
     public List<Long> getHistoryList() {
         return history;
@@ -78,8 +80,18 @@ public class RFdroidService extends Service implements IMeasurement {
         this.btDevice = btDevice;
     }
 
+    @Override
     public BluetoothObject getBtDevice() {
         return btDevice;
+    }
+
+    @Override
+    public boolean isSelectionningDevice() {
+        return selectionning;
+    }
+
+    public void setSelectionningDevice(boolean state) {
+        this.selectionning = state;
     }
 
     public List<Integer> getGlobalSumPerSecond() {
@@ -166,7 +178,26 @@ public class RFdroidService extends Service implements IMeasurement {
                                 globalPacketReceivedPerSecond,
                                 getAveragePacket(ts, historyCopy));
                     }
+
+                } else if (btDevice != null && history.size() > 0) {
+
+                    final long ts = new Date().getTime();
+                    final List<Long> historyCopy = new ArrayList<Long>(history);
+
+                    int totalPacketReceived = calculateTotalPacketReceivedMillis(1000, historyCopy, ts);
+
+                    globalPacketReceivedPerSecond.add(totalPacketReceived);
+
+                    if (scheduledMeasureListener != null) {
+                        scheduledMeasureListener.onNewMeasure(getSamplingTime(ts),
+                                -1,
+                                null,
+                                globalPacketReceivedPerSecond,
+                                getAveragePacket(ts, historyCopy));
+                    }
+
                 }
+
             }
         }, 0, 1, TimeUnit.SECONDS);
     }

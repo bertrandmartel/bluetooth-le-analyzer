@@ -169,68 +169,113 @@ public class BluetoothCustomManager implements IBluetoothCustomManager {
             public void onLeScan(BluetoothDevice device, int rssi, final byte[] scanRecord) {
 
                 if (device.getAddress() != null &&
-                        device.getName() != null &&
-                        device.getName().equals("RFdroid")) {
+                        device.getName() != null) {
 
-                    if (scanningList.containsKey(device.getAddress())) {
-
-                        if (adListener != null) {
-                            long ts = new Date().getTime();
-                            measurement.getHistoryList().add(ts);
-                            adListener.onADframeReceived(ts, measurement.getHistoryList());
-                        }
+                    if (device.getName().equals("RFdroid")) {
+                        dispatchRFdroid(device, rssi, scanRecord);
                     } else {
-                        Log.i(TAG, "found a RFdroid");
-
-                        List<ADStructure> structures = ADPayloadParser.getInstance().parse(scanRecord);
-
-                        int advInterval = -1;
-
-                        for (ADStructure structure : structures) {
-
-                            if (structure instanceof ADManufacturerSpecific) {
-
-                                ADManufacturerSpecific data = (ADManufacturerSpecific) structure;
-
-                                if (data.getData().length == 9) {
-
-                                    byte[] name = new byte[7];
-                                    System.arraycopy(data.getData(), 0, name, 0, 7);
-
-                                    String nameStr = new String(name);
-                                    if (nameStr.equals("RFdroid")) {
-                                        advInterval = (data.getData()[7] << 8) + (data.getData()[8] & 0xFF);
-                                        Log.i(TAG, "current scan interval : " + advInterval);
-                                    }
-                                }
-                            }
-                        }
-
-                        if (advInterval != -1) {
-
-                            scanningList.put(device.getAddress(), device);
-
-                            measurement.setBtDevice(new BluetoothObject(device.getAddress(), device.getName(), (int) (advInterval * 0.625)));
-
-                            try {
-                                JSONObject object = new JSONObject();
-                                object.put(JsonConstants.BT_ADDRESS, device.getAddress());
-                                object.put(JsonConstants.BT_DEVICE_NAME, device.getName());
-                                object.put(JsonConstants.BT_ADVERTISING_INTERVAL, (int) (advInterval * 0.625));
-
-                                ArrayList<String> deviceInfo = new ArrayList<>();
-                                deviceInfo.add(object.toString());
-
-                                broadcastUpdateStringList(BluetoothEvents.BT_EVENT_DEVICE_DISCOVERED, deviceInfo);
-
-                            } catch (JSONException e) {
-                                e.printStackTrace();
-                            }
-                        }
+                        dispatchBtDevices(device, rssi, scanRecord);
                     }
                 }
             }
         };
+    }
+
+    private void dispatchRFdroid(BluetoothDevice device, int rssi, final byte[] scanRecord) {
+
+        if (scanningList.containsKey(device.getAddress())) {
+
+            if (adListener != null && measurement.getBtDevice() != null && measurement.getBtDevice().getDeviceAddress().equals(device.getAddress())) {
+
+                Log.i(TAG, "new scan for target RFdroid device");
+                long ts = new Date().getTime();
+                measurement.getHistoryList().add(ts);
+                adListener.onADframeReceived(ts, measurement.getHistoryList());
+            }
+        } else {
+            Log.i(TAG, "found a RFdroid");
+
+            List<ADStructure> structures = ADPayloadParser.getInstance().parse(scanRecord);
+
+            int advInterval = -1;
+
+            for (ADStructure structure : structures) {
+
+                if (structure instanceof ADManufacturerSpecific) {
+
+                    ADManufacturerSpecific data = (ADManufacturerSpecific) structure;
+
+                    if (data.getData().length == 9) {
+
+                        byte[] name = new byte[7];
+                        System.arraycopy(data.getData(), 0, name, 0, 7);
+
+                        String nameStr = new String(name);
+                        if (nameStr.equals("RFdroid")) {
+                            advInterval = (data.getData()[7] << 8) + (data.getData()[8] & 0xFF);
+                            Log.i(TAG, "current scan interval : " + advInterval);
+                        }
+                    }
+                }
+            }
+
+            if (advInterval != -1) {
+
+                scanningList.put(device.getAddress(), device);
+
+                if (!measurement.isSelectionningDevice())
+                    measurement.setBtDevice(new BluetoothObject(device.getAddress(), device.getName(), (int) (advInterval * 0.625)));
+
+                try {
+                    JSONObject object = new JSONObject();
+                    object.put(JsonConstants.BT_ADDRESS, device.getAddress());
+                    object.put(JsonConstants.BT_DEVICE_NAME, device.getName());
+                    object.put(JsonConstants.BT_ADVERTISING_INTERVAL, (int) (advInterval * 0.625));
+
+                    ArrayList<String> deviceInfo = new ArrayList<>();
+                    deviceInfo.add(object.toString());
+
+                    broadcastUpdateStringList(BluetoothEvents.BT_EVENT_DEVICE_DISCOVERED, deviceInfo);
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+    }
+
+    private void dispatchBtDevices(BluetoothDevice device, int rssi, final byte[] scanRecord) {
+
+        if (scanningList.containsKey(device.getAddress())) {
+
+            if (adListener != null && measurement.getBtDevice()!=null && measurement.getBtDevice().getDeviceAddress().equals(device.getAddress())) {
+
+                long ts = new Date().getTime();
+                measurement.getHistoryList().add(ts);
+                adListener.onADframeReceived(ts, measurement.getHistoryList());
+            }
+        } else {
+
+            Log.i(TAG, "found a new Bluetooth device : " + device.getName() + " : " + device.getAddress());
+
+            scanningList.put(device.getAddress(), device);
+
+            try {
+                JSONObject object = new JSONObject();
+                object.put(JsonConstants.BT_ADDRESS, device.getAddress());
+                object.put(JsonConstants.BT_DEVICE_NAME, device.getName());
+                object.put(JsonConstants.BT_ADVERTISING_INTERVAL, -1);
+
+                ArrayList<String> deviceInfo = new ArrayList<>();
+                deviceInfo.add(object.toString());
+
+                broadcastUpdateStringList(BluetoothEvents.BT_EVENT_DEVICE_DISCOVERED, deviceInfo);
+
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     /**
