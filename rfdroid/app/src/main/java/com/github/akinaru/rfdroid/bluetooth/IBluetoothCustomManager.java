@@ -31,6 +31,7 @@ import com.github.akinaru.rfdroid.utils.ManualResetEvent;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.ScheduledFuture;
 
 /**
  * Generic interface for bluetooth custom manager
@@ -52,4 +53,6 @@ public interface IBluetoothCustomManager {
     public void writeDescriptor(String descriptorUid, BluetoothGatt gatt, byte[] value, String serviceUid, String characUid);
 
     public HashMap<String, IBluetoothDeviceConn> getConnectionList();
+
+    public HashMap<String, ScheduledFuture<?>> getWaitingMap();
 }

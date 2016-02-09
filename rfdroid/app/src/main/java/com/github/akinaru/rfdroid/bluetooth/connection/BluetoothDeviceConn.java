@@ -119,7 +119,13 @@ public class BluetoothDeviceConn implements IBluetoothDeviceConn {
                         e.printStackTrace();
                     }
 
+                    if (manager.getWaitingMap().containsKey(deviceAddr)) {
+                        manager.getWaitingMap().get(deviceAddr).cancel(true);
+                        manager.getWaitingMap().remove(deviceAddr);
+                    }
+
                     if (BluetoothDeviceConn.this.gatt != null) {
+                        Log.i(TAG, "connection close clean");
                         BluetoothDeviceConn.this.gatt.close();
                     }
                 }

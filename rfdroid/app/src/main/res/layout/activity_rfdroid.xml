@@ -219,6 +219,7 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:layout_marginTop="@dimen/abc_action_bar_default_height_material"
+        app:headerLayout="@layout/drawer_header"
         android:background="@android:color/white"
         app:menu="@menu/drawer_view" />
 

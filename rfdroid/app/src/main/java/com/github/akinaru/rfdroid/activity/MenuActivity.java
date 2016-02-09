@@ -12,6 +12,7 @@ import android.view.View;
 import android.widget.ImageButton;
 
 import com.github.akinaru.rfdroid.R;
+import com.github.akinaru.rfdroid.menu.MenuUtils;
 
 /**
  * Created by akinaru on 07/02/16.
@@ -65,8 +66,8 @@ public class MenuActivity extends AppCompatActivity {
         mDrawer.setDrawerListener(drawerToggle);
 
         nvDrawer = (NavigationView) findViewById(R.id.nvView);
-        nvDrawer.setVisibility(View.GONE);
-        mDrawer.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+        //nvDrawer.setVisibility(View.GONE);
+        //mDrawer.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
 
         // Setup drawer view
         setupDrawerContent(nvDrawer);
@@ -89,10 +90,11 @@ public class MenuActivity extends AppCompatActivity {
                 new NavigationView.OnNavigationItemSelectedListener() {
                     @Override
                     public boolean onNavigationItemSelected(MenuItem menuItem) {
-                        //selectDrawerItem(menuItem);
+                        MenuUtils.selectDrawerItem(menuItem, mDrawer, MenuActivity.this);
                         return true;
                     }
                 });
     }
+
 
 }

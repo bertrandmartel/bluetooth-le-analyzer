@@ -43,12 +43,12 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TableLayout;
@@ -63,6 +63,7 @@ import com.github.akinaru.rfdroid.bluetooth.events.BluetoothObject;
 import com.github.akinaru.rfdroid.chart.DataAxisFormatter;
 import com.github.akinaru.rfdroid.inter.IADListener;
 import com.github.akinaru.rfdroid.inter.IScheduledMeasureListener;
+import com.github.akinaru.rfdroid.menu.MenuUtils;
 import com.github.akinaru.rfdroid.service.RFdroidService;
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.components.XAxis;
@@ -76,8 +77,6 @@ import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Dotti device management main activity
@@ -112,15 +111,9 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
     private Toolbar toolbar = null;
     private DrawerLayout mDrawer = null;
 
-    private GestureDetector mGestureDetector;
-
     private ActionBarDrawerToggle drawerToggle;
 
-    private ProgressBar progress_bar;
-
     private NavigationView nvDrawer;
-
-    private ScheduledExecutorService scheduler;
 
     private TableLayout tablelayout;
 
@@ -144,10 +137,11 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
 
     private ScanItemArrayAdapter scanningAdapter = null;
 
-    private int list_item_position = -1;
-
     private TextView deviceNameTv = null;
     private TextView deviceAddressTv = null;
+
+    private ImageButton scanImage;
+    private ProgressBar progressBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -164,8 +158,6 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
 
         altTableRow(2);
 
-        scheduler = Executors.newScheduledThreadPool(1);
-
         //Button button_stop_scanning = (Button) findViewById(R.id.stop_scanning_button);
         //progress_bar = (ProgressBar) findViewById(R.id.scanningProgress);
 
@@ -178,7 +170,6 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         toolbar.inflateMenu(R.menu.toolbar_menu);
 
-
         // Find our drawer view
         mDrawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawerToggle = setupDrawerToggle();
@@ -186,8 +177,6 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
         mDrawer.setDrawerListener(drawerToggle);
 
         nvDrawer = (NavigationView) findViewById(R.id.nvView);
-        nvDrawer.setVisibility(View.GONE);
-        mDrawer.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
 
         // Setup drawer view
         setupDrawerContent(nvDrawer);
@@ -205,13 +194,6 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
         }
-
-        /*
-        if (progress_bar != null) {
-            progress_bar.setEnabled(false);
-            progress_bar.getIndeterminateDrawable().setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN);
-        }
-        */
 
         registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
 
@@ -273,6 +255,21 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         this.getMenuInflater().inflate(R.menu.toolbar_menu, menu);
+        scanImage = (ImageButton) menu.findItem(R.id.scanning_button).getActionView().findViewById(R.id.bluetooth_scan_stop);
+        progressBar = (ProgressBar) menu.findItem(R.id.scanning_button).getActionView().findViewById(R.id.bluetooth_scanning);
+        scanImage.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                changeScanStatus();
+            }
+        });
+        progressBar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                changeScanStatus();
+            }
+        });
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -289,23 +286,13 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
                 new NavigationView.OnNavigationItemSelectedListener() {
                     @Override
                     public boolean onNavigationItemSelected(MenuItem menuItem) {
-                        selectDrawerItem(menuItem);
+                        MenuUtils.selectDrawerItem(menuItem, mDrawer, BtDevicesActivity.this);
                         return true;
                     }
                 });
     }
 
-    public void selectDrawerItem(MenuItem menuItem) {
-
-        switch (menuItem.getItemId()) {
-            case R.id.switch_chart_data: {
-                break;
-            }
-        }
-        mDrawer.closeDrawers();
-    }
-
-    private void changeScanStatus(MenuItem menuItem) {
+    private void changeScanStatus() {
 
         if (currentService != null && currentService.isScanning()) {
             Log.i(TAG, "scanning stopped...");
@@ -315,6 +302,7 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
                     Toast.makeText(BtDevicesActivity.this, "scanning has stopped", Toast.LENGTH_SHORT).show();
                 }
             });
+            hideProgressBar();
             currentService.stopScan();
         } else {
             Log.i(TAG, "scanning ...");
@@ -369,9 +357,6 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
         switch (item.getItemId()) {
             case android.R.id.home:
                 mDrawer.openDrawer(GravityCompat.START);
-                return true;
-            case R.id.scanning_button:
-                changeScanStatus(item);
                 return true;
         }
 
@@ -453,14 +438,9 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
 
         if (currentService != null && !currentService.isScanning()) {
 
+            showProgressBar();
+
             Log.i(TAG, "START SCAN");
-
-            if (scanningAdapter != null) {
-                scanningAdapter.clear();
-                scanningAdapter.notifyDataSetChanged();
-            }
-
-            currentService.clearScanningList();
 
             currentService.disconnectall();
             currentService.startScan();
@@ -468,6 +448,20 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
         } else {
             Toast.makeText(BtDevicesActivity.this, "Scanning already engaged...", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void showProgressBar() {
+        if (scanImage != null)
+            scanImage.setVisibility(View.GONE);
+        if (progressBar != null)
+            progressBar.setVisibility(View.VISIBLE);
+    }
+
+    private void hideProgressBar(){
+        if (scanImage != null)
+            scanImage.setVisibility(View.VISIBLE);
+        if (progressBar != null)
+            progressBar.setVisibility(View.GONE);
     }
 
     @Override
@@ -505,6 +499,8 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
             currentService.disconnectall();
 
             if (currentService.isScanning()) {
+
+                hideProgressBar();
                 /*
                 if (progress_bar != null) {
                     progress_bar.setEnabled(false);
@@ -531,15 +527,15 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
 
                 Log.i(TAG, "New device has been discovered");
 
-                btDevice = BluetoothObject.parseArrayList(intent);
+                final BluetoothObject btDeviceTmp = BluetoothObject.parseArrayList(intent);
 
-                if (btDevice != null) {
+                if (btDeviceTmp != null) {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
 
                             if (scanningAdapter != null) {
-                                scanningAdapter.add(btDevice);
+                                scanningAdapter.add(btDeviceTmp);
                                 scanningAdapter.notifyDataSetChanged();
                             }
                         }
@@ -598,9 +594,12 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
                                         int position, long id) {
 
 
-                    BluetoothObject btDevice = scanningAdapter.getItem(position);
+                    btDevice = scanningAdapter.getItem(position);
 
-                    if (currentService.getBtDevice() != null && btDevice != null && !btDevice.getDeviceAddress().equals(currentService.getBtDevice().getDeviceAddress())) {
+                    if (currentService.getBtDevice() == null || (btDevice != null && !btDevice.getDeviceAddress().equals(currentService.getBtDevice().getDeviceAddress()))) {
+                        if (!currentService.isScanning())
+                            triggerNewScan();
+                    } else {
                         currentService.stopScan();
                     }
 
@@ -618,8 +617,6 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
 
                     currentService.setBtDevice(btDevice);
 
-                    if (!currentService.isScanning())
-                        triggerNewScan();
 
                     scanningListView.setVisibility(View.GONE);
                 }
@@ -699,9 +696,10 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
             if (scanningListView.getVisibility() == View.VISIBLE) {
                 onBackPressed();
             } else {
-                if (currentService.isScanning()
-                        )
+                if (currentService.isScanning()) {
+                    hideProgressBar();
                     currentService.stopScan();
+                }
                 scanningListView.setVisibility(View.VISIBLE);
                 if (deviceNameTv != null)
                     deviceNameTv.setVisibility(View.GONE);

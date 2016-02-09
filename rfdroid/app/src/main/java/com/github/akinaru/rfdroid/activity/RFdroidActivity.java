@@ -24,6 +24,7 @@
 package com.github.akinaru.rfdroid.activity;
 
 import android.app.ProgressDialog;
+import android.app.UiModeManager;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -34,8 +35,8 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Color;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -48,12 +49,12 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewTreeObserver;
-import android.view.Window;
-import android.view.WindowManager;
+import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
@@ -71,6 +72,7 @@ import com.github.akinaru.rfdroid.chart.DataAxisFormatter;
 import com.github.akinaru.rfdroid.chart.DataChartType;
 import com.github.akinaru.rfdroid.inter.IADListener;
 import com.github.akinaru.rfdroid.inter.IScheduledMeasureListener;
+import com.github.akinaru.rfdroid.menu.MenuUtils;
 import com.github.akinaru.rfdroid.service.RFdroidService;
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.components.XAxis;
@@ -157,11 +159,21 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
 
     private final static String PREFERENCES = "storage";
 
+    private boolean openingDrawer = false;
+
+    private MenuItem scanMenuItem;
+
+    private ImageButton scanImage;
+
+    private ProgressBar progressBar;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_rfdroid);
+
+        UiModeManager uiModeManager = (UiModeManager) getSystemService(UI_MODE_SERVICE);
 
         deviceFoundDialog = ProgressDialog.show(RFdroidActivity.this, "", "Looking for RFdroid ...", true);
         deviceFoundDialog.setCancelable(false);
@@ -177,24 +189,16 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
             }
         });
 
-        /*
-        Window window = getWindow();
-        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-
-        if (Build.VERSION.SDK_INT >= 21) {
-            window.setStatusBarColor(getResources().getColor(R.color.default_color));
-        }
-        */
-
         final ScrollView view = (ScrollView) findViewById(R.id.scrollview);
         view.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
             @Override
             public void onScrollChanged() {
-                if (view.getScrollX() == 0 && view.getScrollY() == 0) {
-                    discreteSeekBar.showFloater(250);
-                } else {
-                    discreteSeekBar.hideFloater(1);
+                if (!openingDrawer) {
+                    if (view.getScrollX() == 0 && view.getScrollY() == 0) {
+                        discreteSeekBar.showFloater(250);
+                    } else {
+                        discreteSeekBar.hideFloater(1);
+                    }
                 }
             }
         });
@@ -235,6 +239,11 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
 
         // Setup drawer view
         setupDrawerContent(nvDrawer);
+
+        View headerView = LayoutInflater.from(this).inflate(R.layout.drawer_header, nvDrawer, false);
+        headerView.setVisibility(View.GONE);
+        headerView.setActivated(false);
+        headerView.setClickable(false);
 
         // Use this check to determine whether BLE is supported on the device. Then
         // you can selectively disable BLE-related features.
@@ -309,89 +318,41 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
                 return value * 5;
             }
         });
+
+        discreteSeekBar.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (!hasFocus) {
+                    discreteSeekBar.showFloater(250);
+                }
+            }
+        });
+
         discreteSeekBar.setOnProgressChangeListener(new DiscreteSeekBar.OnProgressChangeListener() {
 
             @Override
             public void onProgressChanged(DiscreteSeekBar seekBar, int value, boolean fromUser) {
-
             }
 
             @Override
             public void onStartTrackingTouch(DiscreteSeekBar seekBar) {
-
             }
 
             @Override
             public void onStopTrackingTouch(DiscreteSeekBar seekBar) {
-
-                adInterval = seekBar.getProgress() * 5;
-
-                Log.i(TAG, "setting AD interval to " + adInterval + "ms");
-
-                runOnUiThread(new Runnable() {
-
-                    @Override
-                    public void run() {
-
-                        if (btDevice != null && !btDevice.getDeviceAddress().equals("")) {
-
-                            final String deviceAddress = btDevice.getDeviceAddress();
-
-                            if (currentService.isScanning()) {
-
-                                currentService.stopScan();
-
-                                /*
-                                if (progress_bar != null) {
-                                    progress_bar.setEnabled(false);
-                                    progress_bar.setVisibility(View.GONE);
-                                }
-                                */
-                            }
-
-                            if (!currentService.getConnectionList().containsKey(deviceAddress) ||
-                                    !currentService.getConnectionList().get(deviceAddress).isConnected()) {
-
-                                dialog = ProgressDialog.show(RFdroidActivity.this, "", "Connecting ...", true);
-
-                                currentService.connect(deviceAddress);
-
-                            } else {
-
-                                if (!currentService.getConnectionList().get(deviceAddress).isConnected()) {
-
-                                    currentService.connect(deviceAddress);
-
-                                } else {
-
-                                    if (currentService.getConnectionList().get(deviceAddress).getDevice() instanceof IRfduinoDevice) {
-
-                                        IRfduinoDevice device = (IRfduinoDevice) currentService.getConnectionList().get(deviceAddress).getDevice();
-
-                                        device.setAdvertisingInterval(adInterval, new IPushListener() {
-                                            @Override
-                                            public void onPushFailure() {
-                                                Log.i(TAG, "onPushFailure");
-                                                currentService.disconnect(deviceAddress);
-                                                refreshViewOnError();
-                                            }
-
-                                            @Override
-                                            public void onPushSuccess() {
-                                                Log.i(TAG, "onPushSuccess");
-                                                currentService.disconnect(deviceAddress);
-                                                refreshViewOnSucccess();
-                                            }
-                                        });
-                                    }
-                                }
-                            }
-
-                        }
-                    }
-                });
+                setAdvertisingInteval();
             }
         });
+
+        if (uiModeManager.getCurrentModeType() == Configuration.UI_MODE_TYPE_TELEVISION) {
+
+            discreteSeekBar.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    setAdvertisingInteval();
+                }
+            });
+        }
 
         intervalTv = (TextView) findViewById(R.id.interval_head);
         globalReceptionRateTv = (TextView) findViewById(R.id.global_reception_rate);
@@ -410,8 +371,95 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
     }
 
     @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+        return true;
+    }
+
+    private void setAdvertisingInteval() {
+
+        adInterval = discreteSeekBar.getProgress() * 5;
+
+        Log.i(TAG, "setting AD interval to " + adInterval + "ms");
+
+        runOnUiThread(new Runnable() {
+
+            @Override
+            public void run() {
+
+                if (btDevice != null && !btDevice.getDeviceAddress().equals("")) {
+
+                    final String deviceAddress = btDevice.getDeviceAddress();
+
+                    if (currentService.isScanning()) {
+
+                        scanMenuItem.setIcon(R.drawable.bluetooth);
+
+                        currentService.stopScan();
+                    }
+
+                    if (!currentService.getConnectionList().containsKey(deviceAddress) ||
+                            !currentService.getConnectionList().get(deviceAddress).isConnected()) {
+
+                        dialog = ProgressDialog.show(RFdroidActivity.this, "", "Connecting ...", true);
+
+                        currentService.connect(deviceAddress);
+
+                    } else {
+
+                        if (!currentService.getConnectionList().get(deviceAddress).isConnected()) {
+
+                            currentService.connect(deviceAddress);
+
+                        } else {
+
+                            if (currentService.getConnectionList().get(deviceAddress).getDevice() instanceof IRfduinoDevice) {
+
+                                IRfduinoDevice device = (IRfduinoDevice) currentService.getConnectionList().get(deviceAddress).getDevice();
+
+                                device.setAdvertisingInterval(adInterval, new IPushListener() {
+                                    @Override
+                                    public void onPushFailure() {
+                                        Log.i(TAG, "onPushFailure");
+                                        currentService.disconnect(deviceAddress);
+                                        refreshViewOnError();
+                                    }
+
+                                    @Override
+                                    public void onPushSuccess() {
+                                        Log.i(TAG, "onPushSuccess");
+                                        currentService.disconnect(deviceAddress);
+                                        refreshViewOnSucccess();
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                }
+            }
+        });
+    }
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         this.getMenuInflater().inflate(R.menu.toolbar_menu, menu);
+        scanMenuItem = menu.findItem(R.id.scanning_button);
+        scanImage = (ImageButton) menu.findItem(R.id.scanning_button).getActionView().findViewById(R.id.bluetooth_scan_stop);
+        progressBar = (ProgressBar) menu.findItem(R.id.scanning_button).getActionView().findViewById(R.id.bluetooth_scanning);
+        scanImage.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                changeScanStatus();
+            }
+        });
+        progressBar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                changeScanStatus();
+            }
+        });
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -426,25 +474,21 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
 
     private void setupDrawerContent(NavigationView navigationView) {
 
+        navigationView.getMenu().getItem(0).setVisible(true);
         navigationView.setNavigationItemSelectedListener(
                 new NavigationView.OnNavigationItemSelectedListener() {
                     @Override
                     public boolean onNavigationItemSelected(MenuItem menuItem) {
-                        selectDrawerItem(menuItem);
+
+                        if (menuItem.getItemId() == R.id.switch_chart_data) {
+                            switchChartData(menuItem);
+                            mDrawer.closeDrawers();
+                        } else {
+                            MenuUtils.selectDrawerItem(menuItem, mDrawer, RFdroidActivity.this);
+                        }
                         return true;
                     }
                 });
-    }
-
-    public void selectDrawerItem(MenuItem menuItem) {
-
-        switch (menuItem.getItemId()) {
-            case R.id.switch_chart_data: {
-                switchChartData(menuItem);
-                break;
-            }
-        }
-        mDrawer.closeDrawers();
     }
 
     private void switchChartData(MenuItem menuItem) {
@@ -465,7 +509,7 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
         editor.commit();
     }
 
-    private void changeScanStatus(MenuItem menuItem) {
+    private void changeScanStatus() {
 
         if (currentService != null && currentService.isScanning()) {
             Log.i(TAG, "scanning stopped...");
@@ -475,6 +519,8 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
                     Toast.makeText(RFdroidActivity.this, "scanning has stopped", Toast.LENGTH_SHORT).show();
                 }
             });
+            progressBar.setVisibility(View.GONE);
+            scanImage.setVisibility(View.VISIBLE);
             currentService.stopScan();
         } else {
             Log.i(TAG, "scanning ...");
@@ -502,10 +548,34 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
             @Override
             public void onDrawerSlide(View drawerView, float slideOffset) {
                 super.onDrawerSlide(drawerView, slideOffset);
-                if (slideOffset > 0)
-                    discreteSeekBar.hideFloater(1);
-                else
-                    discreteSeekBar.showFloater(250);
+
+                if (slideOffset == 0) {
+                    openingDrawer = false;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            discreteSeekBar.showFloater(250);
+                        }
+                    });
+                } else if (slideOffset == 1) {
+                    openingDrawer = true;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            discreteSeekBar.hideFloater(1);
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onDrawerOpened(View drawerView) {
+                super.onDrawerOpened(drawerView);
+            }
+
+            @Override
+            public void onDrawerClosed(View drawerView) {
+                super.onDrawerClosed(drawerView);
             }
         };
     }
@@ -538,9 +608,6 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
         switch (item.getItemId()) {
             case android.R.id.home:
                 mDrawer.openDrawer(GravityCompat.START);
-                return true;
-            case R.id.scanning_button:
-                changeScanStatus(item);
                 return true;
         }
 
@@ -636,12 +703,10 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
 
         if (currentService != null && !currentService.isScanning()) {
 
-                /*
-                if (progress_bar != null) {
-                    progress_bar.setEnabled(true);
-                    progress_bar.setVisibility(View.VISIBLE);
-                }
-                */
+            if (scanImage != null)
+                scanImage.setVisibility(View.GONE);
+            if (progressBar != null)
+                progressBar.setVisibility(View.VISIBLE);
 
             Log.i(TAG, "START SCAN");
 
@@ -688,12 +753,9 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
             currentService.disconnectall();
 
             if (currentService.isScanning()) {
-                /*
-                if (progress_bar != null) {
-                    progress_bar.setEnabled(false);
-                    progress_bar.setVisibility(View.GONE);
-                }
-                */
+
+                progressBar.setVisibility(View.GONE);
+                scanImage.setVisibility(View.VISIBLE);
                 currentService.stopScan();
             }
         }
@@ -714,13 +776,15 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
 
                 Log.i(TAG, "New device has been discovered");
 
-                btDevice = BluetoothObject.parseArrayList(intent);
+                BluetoothObject btDeviceTmp = BluetoothObject.parseArrayList(intent);
 
-                if (btDevice != null &&
-                        btDevice.getAdvertizingInterval() != -1 &&
+                if (btDeviceTmp != null &&
+                        btDeviceTmp.getAdvertizingInterval() != -1 &&
                         discreteSeekBar != null &&
                         intervalTv != null &&
                         globalReceptionRateTv != null) {
+
+                    btDevice = btDeviceTmp;
 
                     if (deviceFoundDialog != null)
                         deviceFoundDialog.dismiss();
@@ -738,9 +802,7 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
                 BluetoothObject btDevice = BluetoothObject.parseArrayList(intent);
 
                 if (btDevice != null) {
-
                     closeDialog();
-
                 }
 
             } else if (BluetoothEvents.BT_EVENT_DEVICE_CONNECTED.equals(action)) {
@@ -925,7 +987,7 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
             public void run() {
                 initTv();
                 mChart.setVisibility(View.GONE);
-                if (currentService != null && currentService.getBtDevice() != null) {
+                if (RFdroidActivity.this.btDevice!=null && currentService != null && currentService.getBtDevice() != null) {
                     currentService.getBtDevice().setAdvertizingInterval(adInterval);
                     RFdroidActivity.this.btDevice.setAdvertizingInterval(adInterval);
                     discreteSeekBar.setProgress(RFdroidActivity.this.btDevice.getAdvertizingInterval() / 5);

@@ -1,8 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <item
-        android:id="@+id/switch_chart_data"
-        android:title="Switch chart data to 'packet count'" />
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/switch_chart_data"
+            android:title="Switch chart data to 'packet count'"
+            android:visible="false" />
 
+        <item
+            android:id="@+id/report_bugs"
+            android:title="Report Bugs" />
+
+        <item
+            android:id="@+id/open_source_components"
+            android:title="Open Source components" />
+
+        <item
+            android:id="@+id/about_app"
+            android:title="About" />
+    </group>
 </menu>
