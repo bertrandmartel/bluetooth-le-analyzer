@@ -58,7 +58,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -142,6 +145,10 @@ public class BluetoothCustomManager implements IBluetoothCustomManager {
 
     private IMeasurement measurement = null;
 
+    private ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+
+    private HashMap<String, ScheduledFuture<?>> waitingForDisconnectionList = new HashMap<>();
+
     /**
      * Build bluetooth manager
      */
@@ -187,7 +194,6 @@ public class BluetoothCustomManager implements IBluetoothCustomManager {
 
             if (adListener != null && measurement.getBtDevice() != null && measurement.getBtDevice().getDeviceAddress().equals(device.getAddress())) {
 
-                Log.i(TAG, "new scan for target RFdroid device");
                 long ts = new Date().getTime();
                 measurement.getHistoryList().add(ts);
                 adListener.onADframeReceived(ts, measurement.getHistoryList());
@@ -249,7 +255,7 @@ public class BluetoothCustomManager implements IBluetoothCustomManager {
 
         if (scanningList.containsKey(device.getAddress())) {
 
-            if (adListener != null && measurement.getBtDevice()!=null && measurement.getBtDevice().getDeviceAddress().equals(device.getAddress())) {
+            if (adListener != null && measurement.getBtDevice() != null && measurement.getBtDevice().getDeviceAddress().equals(device.getAddress())) {
 
                 long ts = new Date().getTime();
                 measurement.getHistoryList().add(ts);
@@ -500,8 +506,13 @@ public class BluetoothCustomManager implements IBluetoothCustomManager {
         return bluetoothConnectionList;
     }
 
+    @Override
+    public HashMap<String, ScheduledFuture<?>> getWaitingMap() {
+        return waitingForDisconnectionList;
+    }
+
     @SuppressLint("NewApi")
-    public boolean disconnect(String deviceAddress) {
+    public boolean disconnect(final String deviceAddress) {
 
         if (mBluetoothAdapter == null || deviceAddress == null) {
             Log.w(TAG, "BluetoothAdapter not initialized or unspecified address.");
@@ -513,7 +524,20 @@ public class BluetoothCustomManager implements IBluetoothCustomManager {
             if (bluetoothConnectionList.get(deviceAddress).getBluetoothGatt() != null) {
                 Log.i(TAG, "disconnect device");
                 bluetoothConnectionList.get(deviceAddress).getBluetoothGatt().disconnect();
-                bluetoothConnectionList.get(deviceAddress).getBluetoothGatt().close();
+
+                if (!waitingForDisconnectionList.containsKey(deviceAddress)) {
+
+                    ScheduledFuture<?> task = executor.schedule(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.i(TAG, "connection forced close");
+                            bluetoothConnectionList.get(deviceAddress).getBluetoothGatt().close();
+                            waitingForDisconnectionList.remove(deviceAddress);
+                        }
+                    }, 1000, TimeUnit.MILLISECONDS);
+
+                    waitingForDisconnectionList.put(deviceAddress, task);
+                }
                 bluetoothConnectionList.get(deviceAddress).setConnected(false);
             }
 

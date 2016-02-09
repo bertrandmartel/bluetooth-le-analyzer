@@ -134,12 +134,9 @@ public class RFdroidService extends Service implements IMeasurement {
         setMeasurementTask();
     }
 
-    private void setMeasurementTask() {
+    public void setMeasurementTask() {
 
-        if (measurementTask != null) {
-            measurementTask.cancel(true);
-            measurementTask = null;
-        }
+        stopMeasurement();
         history.clear();
         globalSumPerSecond.clear();
         globalPacketReceivedPerSecond.clear();
@@ -263,10 +260,7 @@ public class RFdroidService extends Service implements IMeasurement {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (measurementTask != null) {
-            measurementTask.cancel(true);
-            measurementTask = null;
-        }
+        stopMeasurement();
     }
 
     @Override
@@ -287,10 +281,7 @@ public class RFdroidService extends Service implements IMeasurement {
     }
 
     public void stopScan() {
-        if (measurementTask != null) {
-            measurementTask.cancel(true);
-            measurementTask = null;
-        }
+        stopMeasurement();
         btManager.stopScan();
     }
 
@@ -298,8 +289,19 @@ public class RFdroidService extends Service implements IMeasurement {
         btManager.connect(deviceAddress);
     }
 
+    public void stopMeasurement(){
+        if (measurementTask != null) {
+            measurementTask.cancel(true);
+            measurementTask = null;
+        }
+    }
+    
     public boolean startScan() {
         setMeasurementTask();
+        return btManager.scanLeDevice();
+    }
+
+    public boolean startScanNoReset() {
         return btManager.scanLeDevice();
     }
 
