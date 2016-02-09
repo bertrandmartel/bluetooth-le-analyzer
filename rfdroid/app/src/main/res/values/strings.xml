@@ -3,5 +3,9 @@
     <string name="action_settings">Settings</string>
     <string name="drawer_open">Open navigation drawer</string>
     <string name="drawer_close">Close navigation drawer</string>
+    <string name="open_source_items">Open Source components</string>
+    <string name="about">About</string>
+    <string name="copyright">\u00a9 2016 Bertrand Martel</string>
+    <string name="github_link">https://github.com/akinaru/RFdroid</string>
 
 </resources>
