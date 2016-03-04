@@ -1,19 +1,45 @@
 # RFdroid
 
-Android app measuring Bluetooth advertizing packet reception rate using one RFduino module
+[![Build Status](https://travis-ci.org/akinaru/RFdroid.svg?branch=master)](https://travis-ci.org/akinaru/RFdroid)
+[![License](http://badge.kloud51.com/pypi/l/html2text.svg)](LICENSE.md)
 
-## Useful links
+Android app showing Bluetooth advertizing packets and measuring reception rate using one RFduino module
 
-Big thanks to Tolson for his great Lazarus Library
-
-* http://forum.rfduino.com/index.php?topic=801.0
+![screenshot](screen/screen.gif)
 
 ## External projects
 
+* BLE AD frame parser : https://github.com/TakahikoKawasaki/nv-bluetooth
+
+* DiscreteSeekbar : https://github.com/AnderWeb/discreteSeekBar
+
+* MPAndroidChart : https://github.com/PhilJay/MPAndroidChart
+
 * Makefile for rfduino : https://github.com/akinaru/rfduino-makefile
 
-* BLE AD frame parser : https://github.com/TakahikoKawasaki/nv-bluetooth
+* RFduino : https://github.com/RFduino/RFduino
+
+## Useful links
+
+Thanks to Tolson for his Lazarus Library
+
+* http://forum.rfduino.com/index.php?topic=801.0
 
 ## License
 
-The MIT License (MIT) Copyright (c) 2016 Bertrand Martel
+```
+Copyright (C) 2016  Bertrand Martel
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+Foobar is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+```

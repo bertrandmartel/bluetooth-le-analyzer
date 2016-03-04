@@ -9,9 +9,6 @@ import android.widget.TextView;
 
 import com.github.akinaru.rfdroid.R;
 
-/**
- * Created by akinaru on 09/02/16.
- */
 public class AboutDialog extends AlertDialog {
 
     public AboutDialog(Context context) {
