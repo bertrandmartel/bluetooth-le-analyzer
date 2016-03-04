@@ -1,25 +1,20 @@
 /**
- * The MIT License (MIT)
+ * This file is part of RFdroid.
  * <p/>
- * Copyright (c) 2016 Bertrand Martel
+ * Copyright (C) 2016  Bertrand Martel
  * <p/>
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Foobar is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  * <p/>
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * Foobar is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  * <p/>
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * You should have received a copy of the GNU General Public License
+ * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.github.akinaru.rfdroid.service;
 
@@ -134,6 +129,9 @@ public class RFdroidService extends Service implements IMeasurement {
         setMeasurementTask();
     }
 
+    /**
+     * start measurement task
+     */
     public void setMeasurementTask() {
 
         stopMeasurement();
@@ -268,55 +266,99 @@ public class RFdroidService extends Service implements IMeasurement {
         return mBinder;
     }
 
+    /**
+     * retrieve scanning list
+     *
+     * @return
+     */
     public Map<String, BluetoothDevice> getScanningList() {
         return btManager.getScanningList();
     }
 
+    /**
+     * define a listener for measurement events
+     *
+     * @param listener
+     */
     public void setScheduledMeasureListener(IScheduledMeasureListener listener) {
         scheduledMeasureListener = listener;
     }
 
+    /**
+     * get scanning state
+     *
+     * @return
+     */
     public boolean isScanning() {
         return btManager.isScanning();
     }
 
+    /**
+     * stop bluetooth scan
+     */
     public void stopScan() {
         stopMeasurement();
         btManager.stopScan();
     }
 
+    /**
+     * connect to a bluetooth device
+     *
+     * @param deviceAddress
+     */
     public void connect(String deviceAddress) {
         btManager.connect(deviceAddress);
     }
 
-    public void stopMeasurement(){
+    /**
+     * stop measurement task
+     */
+    public void stopMeasurement() {
         if (measurementTask != null) {
             measurementTask.cancel(true);
             measurementTask = null;
         }
     }
-    
+
+    /**
+     * start Bluetooth scan
+     *
+     * @return
+     */
     public boolean startScan() {
         setMeasurementTask();
         return btManager.scanLeDevice();
     }
 
-    public boolean startScanNoReset() {
-        return btManager.scanLeDevice();
-    }
-
+    /**
+     * clear bluetooth scanning list
+     */
     public void clearScanningList() {
         btManager.clearScanningList();
     }
 
+    /**
+     * disconnect a Bluetooth device by address
+     *
+     * @param deviceAddress bluetooth device address
+     * @return true if disconection is successfull
+     */
     public boolean disconnect(String deviceAddress) {
         return btManager.disconnect(deviceAddress);
     }
 
+    /**
+     * disconnect all bluetooth devices
+     */
     public void disconnectall() {
         btManager.disconnectAll();
     }
 
+    /**
+     * Retrieve all devices associated
+     *
+     * @return
+     */
     public HashMap<String, IBluetoothDeviceConn> getConnectionList() {
         return btManager.getConnectionList();
     }

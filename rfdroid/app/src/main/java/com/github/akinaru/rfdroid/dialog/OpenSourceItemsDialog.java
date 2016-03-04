@@ -9,9 +9,6 @@ import android.widget.ListView;
 import com.github.akinaru.rfdroid.R;
 import com.github.akinaru.rfdroid.adapter.OpenSourceItemAdapter;
 
-/**
- * Created by akinaru on 09/02/16.
- */
 public class OpenSourceItemsDialog extends AlertDialog {
 
     public OpenSourceItemsDialog(Context context) {
@@ -23,7 +20,7 @@ public class OpenSourceItemsDialog extends AlertDialog {
 
         setView(listview);
         setTitle(R.string.open_source_items);
-        setButton(DialogInterface.BUTTON_POSITIVE,"Ok",
+        setButton(DialogInterface.BUTTON_POSITIVE, "Ok",
                 (DialogInterface.OnClickListener) null);
     }
 }

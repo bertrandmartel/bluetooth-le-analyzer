@@ -1,25 +1,20 @@
 /**
- * The MIT License (MIT)
+ * This file is part of RFdroid.
  * <p/>
- * Copyright (c) 2016 Bertrand Martel
+ * Copyright (C) 2016  Bertrand Martel
  * <p/>
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Foobar is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  * <p/>
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * Foobar is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  * <p/>
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * You should have received a copy of the GNU General Public License
+ * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.github.akinaru.rfdroid.bluetooth;
 
@@ -40,19 +35,19 @@ import java.util.concurrent.ScheduledFuture;
  */
 public interface IBluetoothCustomManager {
 
-    public ManualResetEvent getEventManager();
+    ManualResetEvent getEventManager();
 
-    public void broadcastUpdate(String action);
+    void broadcastUpdate(String action);
 
-    public void broadcastUpdateStringList(String action, ArrayList<String> strList);
+    void broadcastUpdateStringList(String action, ArrayList<String> strList);
 
-    public void writeCharacteristic(String characUid, byte[] value, BluetoothGatt gatt, IPushListener listener);
+    void writeCharacteristic(String characUid, byte[] value, BluetoothGatt gatt, IPushListener listener);
 
-    public void readCharacteristic(String characUid, BluetoothGatt gatt);
+    void readCharacteristic(String characUid, BluetoothGatt gatt);
 
-    public void writeDescriptor(String descriptorUid, BluetoothGatt gatt, byte[] value, String serviceUid, String characUid);
+    void writeDescriptor(String descriptorUid, BluetoothGatt gatt, byte[] value, String serviceUid, String characUid);
 
-    public HashMap<String, IBluetoothDeviceConn> getConnectionList();
+    HashMap<String, IBluetoothDeviceConn> getConnectionList();
 
-    public HashMap<String, ScheduledFuture<?>> getWaitingMap();
+    HashMap<String, ScheduledFuture<?>> getWaitingMap();
 }
