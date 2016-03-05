@@ -3,7 +3,7 @@ language: android
 jdk:
   - openjdk7
 
-sudo: required
+sudo: false
 
 android:
   components:
@@ -15,11 +15,8 @@ cache: false
 install:
   # Ensure Gradle wrapper is executable, download wrapper and show version
   - cd rfdroid;chmod +x ./gradlew; ls -l gradlew; ./gradlew wrapper -v
-  - sudo apt-get -qq update
-  - sudo apt-get install build-essential
   # Download and show android dependencies
   # - ./gradlew androidDependencies
 
 script:
   - cd rfdroid;./gradlew clean build connectedCheck
-  - make build
