@@ -10,7 +10,6 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/rfdroid/app" />
-            <option value="$PROJECT_DIR$/rfdroid/discreteSeekBar/library" />
           </set>
         </option>
       </GradleProjectSettings>

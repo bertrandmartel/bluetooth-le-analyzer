@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/rfdroid/app/app.iml" filepath="$PROJECT_DIR$/rfdroid/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/rfdroid/discreteSeekBar/library/library.iml" filepath="$PROJECT_DIR$/rfdroid/discreteSeekBar/library/library.iml" />
       <module fileurl="file://$PROJECT_DIR$/rfduino-adverter.iml" filepath="$PROJECT_DIR$/rfduino-adverter.iml" />
     </modules>
   </component>

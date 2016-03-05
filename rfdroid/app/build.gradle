@@ -29,5 +29,5 @@ dependencies {
     compile 'com.android.support:design:22.2.1'
     compile 'com.neovisionaries:nv-bluetooth:1.7'
     compile 'com.github.PhilJay:MPAndroidChart:v2.2.0'
-    compile project(':library')
+    compile 'akinaru:seekbar:0.1'
 }
