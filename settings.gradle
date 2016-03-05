@@ -1,0 +1,3 @@
+include ':app',':library'
+project(':app').projectDir = new File('./rfdroid/app')
+project(':library').projectDir = new File('./rfdroid/discreteSeekBar/library')
