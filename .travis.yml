@@ -12,14 +12,11 @@ android:
 
 cache: false
 
-before_install:
-  - git submodule update --init --recursive
 install:
   # Ensure Gradle wrapper is executable, download wrapper and show version
-  - cd rfdroid;chmod +x ./gradlew; ls -l gradlew; ./gradlew wrapper -v
+  - chmod +x ./gradlew; ls -l gradlew; ./gradlew wrapper -v
   # Download and show android dependencies
   # - ./gradlew androidDependencies
 
 script:
   - ./gradlew clean build connectedCheck
-  - cd ..;make build

@@ -7,6 +7,30 @@ Android app showing Bluetooth advertizing packets and measuring reception rate u
 
 ![screenshot](screen/screen.gif)
 
+## Build
+
+### Get code source
+
+```
+git clone git@github.com:akinaru/RFdroid.git
+cd RFdroid
+git submodule update --init --recursive
+```
+
+### Build Android App
+
+```
+./gradlew clean build
+```
+
+### Build & Upload RFduino software
+
+```
+make
+```
+
+refer to https://github.com/akinaru/rfduino-makefile for troubleshoot
+
 ## External projects
 
 * BLE AD frame parser : https://github.com/TakahikoKawasaki/nv-bluetooth

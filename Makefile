@@ -7,13 +7,13 @@ export HEADERS
 .PHONY: all
 
 all:
-	$(MAKE) -C rfduino-makefile 
+	$(MAKE) -C rfduino-build/rfduino-makefile 
 
 build:
-	$(MAKE) -C rfduino-makefile rfduino_lib build
+	$(MAKE) -C rfduino-build/rfduino-makefile rfduino_lib build
 
 clean:
-	$(MAKE) -C rfduino-makefile clean
+	$(MAKE) -C rfduino-build/rfduino-makefile clean
 
 distclean:
-	$(MAKE) -C rfduino-makefile distclean
+	$(MAKE) -C rfduino-build/rfduino-makefile distclean
