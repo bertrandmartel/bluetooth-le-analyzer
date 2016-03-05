@@ -1,2 +1,11 @@
-*.o
-*.d
+.gradle
+/local.properties
+/.idea/workspace.xml
+/.idea/libraries
+.DS_Store
+/build
+rfdroid/build
+rfdroid/app/build
+rfduino-build/*.o
+rfduino-build/*.d
+
