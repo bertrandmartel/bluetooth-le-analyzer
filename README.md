@@ -3,6 +3,10 @@
 [![Build Status](https://travis-ci.org/akinaru/RFdroid.svg?branch=master)](https://travis-ci.org/akinaru/RFdroid)
 [![License](http://badge.kloud51.com/pypi/l/html2text.svg)](LICENSE.md)
 
+<a href="https://play.google.com/store/apps/details?id=com.github.akinaru.rfdroid">
+<img alt="Get it on Google Play" src="http://steverichey.github.io/google-play-badge-svg/img/en_get.svg" />
+</a>
+
 Android app showing Bluetooth advertizing packets and measuring reception rate using one RFduino module
 
 ![screenshot](screen/screen.gif)
