@@ -637,9 +637,11 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
         ArrayList<String> xVals = new ArrayList<String>();
         ArrayList<BarEntry> yVals1 = new ArrayList<BarEntry>();
 
-        for (int i = 0; i < valueList.size(); i++) {
-            xVals.add(i + "s");
-            yVals1.add(new BarEntry(valueList.get(i), i));
+        if (valueList != null) {
+            for (int i = 0; i < valueList.size(); i++) {
+                xVals.add(i + "s");
+                yVals1.add(new BarEntry(valueList.get(i), i));
+            }
         }
 
         String legend = "reception rate per second";
