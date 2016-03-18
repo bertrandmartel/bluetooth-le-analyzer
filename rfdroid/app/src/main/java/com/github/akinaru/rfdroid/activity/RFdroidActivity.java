@@ -39,7 +39,6 @@ import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -91,7 +90,7 @@ import java.util.concurrent.ScheduledExecutorService;
  *
  * @author Bertrand Martel
  */
-public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener, IADListener, IScheduledMeasureListener {
+public class RFdroidActivity extends BaseActivity implements SeekBar.OnSeekBarChangeListener, IADListener, IScheduledMeasureListener {
 
     /**
      * debug tag
@@ -120,16 +119,9 @@ public class RFdroidActivity extends AppCompatActivity implements SeekBar.OnSeek
 
     protected BarChart mChart;
 
-    private Toolbar toolbar = null;
-    private DrawerLayout mDrawer = null;
-
     private GestureDetector mGestureDetector;
 
-    private ActionBarDrawerToggle drawerToggle;
-
     private ProgressBar progress_bar;
-
-    private NavigationView nvDrawer;
 
     private DiscreteSeekBar discreteSeekBar;
 
