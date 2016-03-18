@@ -35,7 +35,6 @@ import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -78,7 +77,7 @@ import java.util.List;
  *
  * @author Bertrand Martel
  */
-public class BtDevicesActivity extends AppCompatActivity implements IADListener, IScheduledMeasureListener {
+public class BtDevicesActivity extends BaseActivity implements IADListener, IScheduledMeasureListener {
 
     /**
      * debug tag
@@ -102,13 +101,6 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
     private RFdroidService currentService = null;
 
     protected BarChart mChart;
-
-    private Toolbar toolbar = null;
-    private DrawerLayout mDrawer = null;
-
-    private ActionBarDrawerToggle drawerToggle;
-
-    private NavigationView nvDrawer;
 
     private TableLayout tablelayout;
 
@@ -242,6 +234,49 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
             bound = bindService(intent, mServiceConnection, BIND_AUTO_CREATE);
         }
 
+        scanningListView = (ListView) findViewById(R.id.scan_list);
+
+        final ArrayList<BluetoothObject> list = new ArrayList<>();
+
+        scanningAdapter = new ScanItemArrayAdapter(BtDevicesActivity.this,
+                android.R.layout.simple_list_item_1, list);
+
+        scanningListView.setAdapter(scanningAdapter);
+
+        scanningListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> parent, final View view,
+                                    int position, long id) {
+
+
+                btDevice = scanningAdapter.getItem(position);
+
+                if (currentService.getBtDevice() == null || (btDevice != null && !btDevice.getDeviceAddress().equals(currentService.getBtDevice().getDeviceAddress()))) {
+                    if (!currentService.isScanning())
+                        triggerNewScan();
+                } else {
+                    currentService.stopScan();
+                }
+
+                scanningAdapter.notifyDataSetChanged();
+
+                if (deviceNameTv != null) {
+                    deviceNameTv.setText(btDevice.getDeviceName());
+                    deviceNameTv.setVisibility(View.VISIBLE);
+                }
+
+                if (deviceAddressTv != null) {
+                    deviceAddressTv.setText(btDevice.getDeviceAddress());
+                    deviceAddressTv.setVisibility(View.VISIBLE);
+                }
+
+                currentService.setBtDevice(btDevice);
+
+
+                scanningListView.setVisibility(View.GONE);
+            }
+        });
     }
 
     @Override
@@ -304,7 +339,8 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
                     Toast.makeText(BtDevicesActivity.this, "scanning ...", Toast.LENGTH_SHORT).show();
                 }
             });
-            scanningListView.setItemChecked(-1, true);
+            if (scanningListView != null)
+                scanningListView.setItemChecked(-1, true);
             triggerNewScan();
         }
     }
@@ -479,11 +515,6 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
     }
 
     @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-    }
-
-    @Override
     protected void onPause() {
         super.onPause();
 
@@ -570,50 +601,6 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
             currentService.setADListener(BtDevicesActivity.this);
             currentService.setScheduledMeasureListener(BtDevicesActivity.this);
 
-            scanningListView = (ListView) findViewById(R.id.scan_list);
-
-            final ArrayList<BluetoothObject> list = new ArrayList<>();
-
-            scanningAdapter = new ScanItemArrayAdapter(BtDevicesActivity.this,
-                    android.R.layout.simple_list_item_1, list);
-
-            scanningListView.setAdapter(scanningAdapter);
-
-            scanningListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-
-                @Override
-                public void onItemClick(AdapterView<?> parent, final View view,
-                                        int position, long id) {
-
-
-                    btDevice = scanningAdapter.getItem(position);
-
-                    if (currentService.getBtDevice() == null || (btDevice != null && !btDevice.getDeviceAddress().equals(currentService.getBtDevice().getDeviceAddress()))) {
-                        if (!currentService.isScanning())
-                            triggerNewScan();
-                    } else {
-                        currentService.stopScan();
-                    }
-
-                    scanningAdapter.notifyDataSetChanged();
-
-                    if (deviceNameTv != null) {
-                        deviceNameTv.setText(btDevice.getDeviceName());
-                        deviceNameTv.setVisibility(View.VISIBLE);
-                    }
-
-                    if (deviceAddressTv != null) {
-                        deviceAddressTv.setText(btDevice.getDeviceAddress());
-                        deviceAddressTv.setVisibility(View.VISIBLE);
-                    }
-
-                    currentService.setBtDevice(btDevice);
-
-
-                    scanningListView.setVisibility(View.GONE);
-                }
-            });
-
             triggerNewScan();
         }
 
@@ -685,7 +672,7 @@ public class BtDevicesActivity extends AppCompatActivity implements IADListener,
 
         if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_BACK) {
 
-            if (scanningListView.getVisibility() == View.VISIBLE) {
+            if ((scanningListView.getVisibility() == View.VISIBLE) || mDrawer.isDrawerOpen(GravityCompat.START)) {
                 onBackPressed();
             } else {
                 if (currentService.isScanning()) {
