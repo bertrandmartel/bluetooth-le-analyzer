@@ -1,2 +1,0 @@
-include ':app'
-project(':app').projectDir = new File('./rfdroid/app')
