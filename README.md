@@ -1,11 +1,13 @@
 # RFdroid
 
 [![Build Status](https://travis-ci.org/akinaru/RFdroid.svg?branch=master)](https://travis-ci.org/akinaru/RFdroid)
+[![Build Status](https://drone.io/github.com/akinaru/RFdroid/status.png)](https://drone.io/github.com/akinaru/RFdroid/latest)
 [![License](http://badge.kloud51.com/pypi/l/html2text.svg)](LICENSE.md)
 
-<a href="https://play.google.com/store/apps/details?id=com.github.akinaru.rfdroid">
-<img alt="Get it on Google Play" src="http://steverichey.github.io/google-play-badge-svg/img/en_get.svg" />
-</a>
+
+[![Download RFdroid from Google Play](http://www.android.com/images/brand/android_app_on_play_large.png)](https://play.google.com/store/apps/details?id=com.github.akinaru.rfdroid)
+[![Download latest debug from drone.io](https://raw.githubusercontent.com/kageiit/images-host/master/badges/drone-io-badge.png)](https://drone.io/github.com/akinaru/RFdroid/files/rfdroid/app/build/outputs/apk/rfdroid-debug.apk)
+
 
 Android app showing Bluetooth advertizing packets and measuring reception rate using one RFduino module
 
