@@ -1,25 +1,24 @@
-# RFdroid
+# Bluetooth LE Analyzer
 
-[![Build Status](https://travis-ci.org/akinaru/RFdroid.svg?branch=master)](https://travis-ci.org/akinaru/RFdroid)
-[![Build Status](https://drone.io/github.com/akinaru/RFdroid/status.png)](https://drone.io/github.com/akinaru/RFdroid/latest)
+[![Build Status](https://travis-ci.org/akinaru/bluetooth-le-analyzer.svg?branch=master)](https://travis-ci.org/akinaru/bluetooth-le-analyzer)
 [![License](http://badge.kloud51.com/pypi/l/html2text.svg)](LICENSE.md)
 
 
-[![Download RFdroid from Google Play](http://www.android.com/images/brand/android_app_on_play_large.png)](https://play.google.com/store/apps/details?id=com.github.akinaru.rfdroid)
-[![Download latest debug from drone.io](https://raw.githubusercontent.com/kageiit/images-host/master/badges/drone-io-badge.png)](https://drone.io/github.com/akinaru/RFdroid/files/rfdroid/app/build/outputs/apk/rfdroid-debug.apk)
+[![Download Bluetooth LE Analyzer from Google Play](http://www.android.com/images/brand/android_app_on_play_large.png)](https://play.google.com/store/apps/details?id=com.github.akinaru.rfdroid)
+[![Download latest debug from drone.io](https://raw.githubusercontent.com/kageiit/images-host/master/badges/drone-io-badge.png)](https://drone.io/github.com/akinaru/bluetooth-le-analyzer/files/bleanalyzer/app/build/outputs/apk/app-debug.apk)
 
 
 Android app showing Bluetooth advertizing packets and measuring reception rate using one RFduino module
 
-![screenshot](screen/screen.gif)
+![screenshot](img/screen.gif)
 
 ## Build
 
 ### Get code source
 
 ```
-git clone git@github.com:akinaru/RFdroid.git
-cd RFdroid
+git clone git@github.com:akinaru/bluetooth-le-analyzer.git
+cd bluetooth-le-analyzer
 git submodule update --init --recursive
 ```
 

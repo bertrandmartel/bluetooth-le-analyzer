@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/rfdroid/app/app.iml" filepath="$PROJECT_DIR$/rfdroid/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/rfduino-adverter.iml" filepath="$PROJECT_DIR$/rfduino-adverter.iml" />
+      <module fileurl="file://$PROJECT_DIR$/bleanalyzer/app/app.iml" filepath="$PROJECT_DIR$/bleanalyzer/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/bluetooth-le-analyzer.iml" filepath="$PROJECT_DIR$/bluetooth-le-analyzer.iml" />
     </modules>
   </component>
 </project>
