@@ -8,7 +8,7 @@
 [![Download latest debug from drone.io](https://raw.githubusercontent.com/kageiit/images-host/master/badges/drone-io-badge.png)](https://drone.io/github.com/akinaru/bluetooth-le-analyzer/files/bleanalyzer/app/build/outputs/apk/app-debug.apk)
 
 
-Android app showing Bluetooth advertizing packets and measuring reception rate using one RFduino module
+Android app showing Bluetooth advertising packets and measuring reception rate using one RFduino module
 
 ![screenshot](img/screen.gif)
 
