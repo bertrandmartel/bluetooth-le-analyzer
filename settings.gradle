@@ -1,2 +1,2 @@
-include ':rfdroid'
-project(':rfdroid').projectDir = new File('./rfdroid/app')
+include ':app'
+project(':app').projectDir = new File('./bleanalyzer/app')

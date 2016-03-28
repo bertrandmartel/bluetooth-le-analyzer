@@ -9,7 +9,7 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
-            <option value="$PROJECT_DIR$/rfdroid/app" />
+            <option value="$PROJECT_DIR$/bleanalyzer/app" />
           </set>
         </option>
       </GradleProjectSettings>
