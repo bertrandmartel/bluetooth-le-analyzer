@@ -1,11 +1,11 @@
 # Bluetooth LE Analyzer
 
-[![Build Status](https://travis-ci.org/akinaru/bluetooth-le-analyzer.svg?branch=master)](https://travis-ci.org/akinaru/bluetooth-le-analyzer)
+[![Build Status](https://travis-ci.org/bertrandmartel/bluetooth-le-analyzer.svg?branch=master)](https://travis-ci.org/bertrandmartel/bluetooth-le-analyzer)
 [![License](http://badge.kloud51.com/pypi/l/html2text.svg)](LICENSE.md)
 
 
 [![Download Bluetooth LE Analyzer from Google Play](http://www.android.com/images/brand/android_app_on_play_large.png)](https://play.google.com/store/apps/details?id=com.github.akinaru.bleanalyzer)
-[![Download latest debug from drone.io](https://raw.githubusercontent.com/kageiit/images-host/master/badges/drone-io-badge.png)](https://drone.io/github.com/akinaru/bluetooth-le-analyzer/files/bleanalyzer/app/build/outputs/apk/app-debug.apk)
+[![Download latest debug from drone.io](https://raw.githubusercontent.com/kageiit/images-host/master/badges/drone-io-badge.png)](https://drone.io/github.com/bertrandmartel/bluetooth-le-analyzer/files/bleanalyzer/app/build/outputs/apk/app-debug.apk)
 
 
 Android app showing Bluetooth advertising packets and measuring reception rate using one RFduino module
@@ -17,7 +17,7 @@ Android app showing Bluetooth advertising packets and measuring reception rate u
 ### Get code source
 
 ```
-git clone git@github.com:akinaru/bluetooth-le-analyzer.git
+git clone git@github.com:bertrandmartel/bluetooth-le-analyzer.git
 cd bluetooth-le-analyzer
 git submodule update --init --recursive
 ```
@@ -34,7 +34,7 @@ git submodule update --init --recursive
 make
 ```
 
-refer to https://github.com/akinaru/rfduino-makefile for troubleshoot
+refer to https://github.com/bertrandmartel/rfduino-makefile for troubleshoot
 
 ## External projects
 
@@ -44,7 +44,7 @@ refer to https://github.com/akinaru/rfduino-makefile for troubleshoot
 
 * MPAndroidChart : https://github.com/PhilJay/MPAndroidChart
 
-* Makefile for rfduino : https://github.com/akinaru/rfduino-makefile
+* Makefile for rfduino : https://github.com/bertrandmartel/rfduino-makefile
 
 * RFduino : https://github.com/RFduino/RFduino
 
