@@ -1,3 +1,3 @@
 [submodule "rfduino-build/rfduino-makefile"]
 	path = rfduino-build/rfduino-makefile
-	url = git://github.com/akinaru/rfduino-makefile.git
+	url = git://github.com/bertrandmartel/rfduino-makefile.git
