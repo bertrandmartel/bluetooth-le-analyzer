@@ -30,5 +30,5 @@ dependencies {
     compile 'com.android.support:recyclerview-v7:25.0.1'
     compile 'com.neovisionaries:nv-bluetooth:1.7'
     compile 'com.github.PhilJay:MPAndroidChart:v2.2.3'
-    compile 'bmartel.fr:seekbar:0.1'
+    compile 'fr.bmartel:seekbar:0.1'
 }
