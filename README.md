@@ -5,7 +5,6 @@
 
 
 [![Download Bluetooth LE Analyzer from Google Play](http://www.android.com/images/brand/android_app_on_play_large.png)](https://play.google.com/store/apps/details?id=com.github.akinaru.bleanalyzer)
-[![Download latest debug from drone.io](https://raw.githubusercontent.com/kageiit/images-host/master/badges/drone-io-badge.png)](https://drone.io/github.com/bertrandmartel/bluetooth-le-analyzer/files/bleanalyzer/app/build/outputs/apk/app-debug.apk)
 
 
 Android app showing Bluetooth advertising packets and measuring reception rate using one RFduino module
