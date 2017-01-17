@@ -18,6 +18,7 @@
  */
 package com.github.akinaru.bleanalyzer.activity;
 
+import android.Manifest;
 import android.app.ProgressDialog;
 import android.app.UiModeManager;
 import android.content.BroadcastReceiver;
@@ -28,8 +29,10 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -115,6 +118,8 @@ public class RFdroidActivity extends BaseActivity implements SeekBar.OnSeekBarCh
     private final static String PREFERENCES = "storage";
 
     private boolean openingDrawer = false;
+
+    private static final int REQUEST_PERMISSION_COARSE_LOCATION = 2;
 
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -259,11 +264,42 @@ public class RFdroidActivity extends BaseActivity implements SeekBar.OnSeekBarCh
 
         initTv();
 
+        if (Build.VERSION.SDK_INT >= 23) {
+            if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, REQUEST_PERMISSION_COARSE_LOCATION);
+            } else {
+                bindService();
+            }
+        } else {
+            bindService();
+        }
+    }
+
+    private void bindService() {
         if (mBluetoothAdapter.isEnabled()) {
             Intent intent = new Intent(this, BtAnalyzerService.class);
             mBound = bindService(intent, mServiceConnection, BIND_AUTO_CREATE);
         }
+    }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+
+        switch (requestCode) {
+            case REQUEST_PERMISSION_COARSE_LOCATION: {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    bindService();
+                } else {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(RFdroidActivity.this, getResources().getString(R.string.permission_required), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+        }
     }
 
     @Override

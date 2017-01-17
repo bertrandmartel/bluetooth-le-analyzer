@@ -35,4 +35,5 @@
     <string name="menu_item_report_bugs">Report Bugs</string>
     <string name="menu_item_rfdroid_device">RFdroid device</string>
     <string name="menu_item_switch_data_packet_count">Switch chart data to \'packet count\'</string>
+    <string name="permission_required">permission coarse location required for ble scan</string>
 </resources>

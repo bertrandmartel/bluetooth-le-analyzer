@@ -18,10 +18,13 @@
  */
 package com.github.akinaru.bleanalyzer.activity;
 
+import android.Manifest;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
@@ -119,6 +122,8 @@ public class AnalyzerActivity extends BaseActivity implements IADListener, ISche
     private ImageButton scanImage;
     private ProgressBar progressBar;
 
+    private static final int REQUEST_PERMISSION_COARSE_LOCATION = 2;
+
     protected void onCreate(Bundle savedInstanceState) {
 
         setLayout(R.layout.activity_analyzer);
@@ -150,7 +155,18 @@ public class AnalyzerActivity extends BaseActivity implements IADListener, ISche
         deviceNameTv.setText(deviceName);
         deviceAddressTv.setText(deviceAddr);
 
-        //bind to service
+        if (Build.VERSION.SDK_INT >= 23) {
+            if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, REQUEST_PERMISSION_COARSE_LOCATION);
+            } else {
+                bindService();
+            }
+        } else {
+            bindService();
+        }
+    }
+
+    private void bindService() {
         if (mBluetoothAdapter.isEnabled()) {
             Intent intent = new Intent(this, BtAnalyzerService.class);
             mBound = bindService(intent, mServiceConnection, BIND_AUTO_CREATE);
@@ -196,6 +212,26 @@ public class AnalyzerActivity extends BaseActivity implements IADListener, ISche
         mChart.getLegend().setEnabled(true);
 
         mChart.setVisibility(View.GONE);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+
+        switch (requestCode) {
+            case REQUEST_PERMISSION_COARSE_LOCATION: {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    bindService();
+                } else {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(AnalyzerActivity.this, getResources().getString(R.string.permission_required), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+        }
     }
 
     /**
