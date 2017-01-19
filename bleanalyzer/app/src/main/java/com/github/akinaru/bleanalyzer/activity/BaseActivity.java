@@ -1,7 +1,7 @@
 /****************************************************************************
  * This file is part of Bluetooth LE Analyzer.                              *
  * <p/>                                                                     *
- * Copyright (C) 2016  Bertrand Martel                                      *
+ * Copyright (C) 2017  Bertrand Martel                                      *
  * <p/>                                                                     *
  * Foobar is free software: you can redistribute it and/or modify           *
  * it under the terms of the GNU General Public License as published by     *
@@ -138,19 +138,23 @@ public abstract class BaseActivity extends AppCompatActivity implements IBtActiv
 
         // Setup drawer view
         setupDrawerContent(nvDrawer);
+    }
 
+    protected boolean setupBluetooth() {
         //setup bluetooth
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             Toast.makeText(this, getResources().getString(R.string.ble_not_supported), Toast.LENGTH_SHORT).show();
             finish();
+        } else {
+            //setup bluetooth adapter
+            mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+            if (!mBluetoothAdapter.isEnabled()) {
+                Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+            }
+            return true;
         }
-
-        //setup bluetooth adapter
-        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (!mBluetoothAdapter.isEnabled()) {
-            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-        }
+        return false;
     }
 
     /**

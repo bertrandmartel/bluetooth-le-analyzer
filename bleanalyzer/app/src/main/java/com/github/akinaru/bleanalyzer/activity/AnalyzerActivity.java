@@ -1,7 +1,7 @@
 /****************************************************************************
  * This file is part of Bluetooth LE Analyzer.                              *
  * <p/>                                                                     *
- * Copyright (C) 2016  Bertrand Martel                                      *
+ * Copyright (C) 2017  Bertrand Martel                                      *
  * <p/>                                                                     *
  * Foobar is free software: you can redistribute it and/or modify           *
  * it under the terms of the GNU General Public License as published by     *
@@ -128,6 +128,10 @@ public class AnalyzerActivity extends BaseActivity implements IADListener, ISche
 
         setLayout(R.layout.activity_analyzer);
         super.onCreate(savedInstanceState);
+
+        if (!setupBluetooth()) {
+            return;
+        }
 
         //set device address to analyze
         String deviceAddr = getIntent().getExtras().getString("deviceAddress");

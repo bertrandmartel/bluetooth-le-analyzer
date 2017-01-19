@@ -1,7 +1,7 @@
 /****************************************************************************
  * This file is part of Bluetooth LE Analyzer.                              *
  * <p/>                                                                     *
- * Copyright (C) 2016  Bertrand Martel                                      *
+ * Copyright (C) 2017  Bertrand Martel                                      *
  * <p/>                                                                     *
  * Foobar is free software: you can redistribute it and/or modify           *
  * it under the terms of the GNU General Public License as published by     *
@@ -106,6 +106,10 @@ public class ScanActivity extends BaseActivity implements IBtActivity {
 
         //register bluetooth event broadcast receiver
         registerReceiver(mBluetoothReceiver, makeGattUpdateIntentFilter());
+
+        if (!setupBluetooth()) {
+            return;
+        }
 
         //setup recyclerview
         scanningRecyclerView = (RecyclerView) findViewById(R.id.scan_list);
