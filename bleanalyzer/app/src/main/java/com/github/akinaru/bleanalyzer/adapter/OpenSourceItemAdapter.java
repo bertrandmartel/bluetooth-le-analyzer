@@ -1,7 +1,7 @@
 /****************************************************************************
  * This file is part of Bluetooth LE Analyzer.                              *
  * <p/>                                                                     *
- * Copyright (C) 2016  Bertrand Martel                                      *
+ * Copyright (C) 2017  Bertrand Martel                                      *
  * <p/>                                                                     *
  * Foobar is free software: you can redistribute it and/or modify           *
  * it under the terms of the GNU General Public License as published by     *
@@ -41,7 +41,7 @@ public class OpenSourceItemAdapter extends BaseAdapter {
                     "https://github.com/PhilJay/MPAndroidChart"},
             {"nv-bluetooth", "https://github.com/TakahikoKawasaki/nv-bluetooth"},
             {"RFDuino", "https://github.com/RFduino/RFduino"},
-            {"rfduino-makefile", "https://github.com/akinaru/rfduino-makefile"}
+            {"rfduino-makefile", "https://github.com/bertrandmartel/rfduino-makefile"}
     };
 
     private LayoutInflater mInflater;

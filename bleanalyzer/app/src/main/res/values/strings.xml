@@ -5,8 +5,8 @@
     <string name="drawer_close">Close navigation drawer</string>
     <string name="open_source_items">Open Source components</string>
     <string name="about">About</string>
-    <string name="copyright">\u00a9 2016 Bertrand Martel</string>
-    <string name="github_link">https://github.com/akinaru/bluetooth-le-analyzer</string>
+    <string name="copyright">\u00a9 2017 Bertrand Martel</string>
+    <string name="github_link">https://github.com/bertrandmartel/bluetooth-le-analyzer</string>
     <string name="bt_device_title">Bluetooth LE Analyzer</string>
     <string name="ble_not_supported">Bluetooth Smart is not supported on your device</string>
     <string name="toast_scan_stop">scanning has stopped</string>
