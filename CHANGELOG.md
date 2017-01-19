@@ -1,5 +1,8 @@
 # Change Log
 
+## [1.6](https://github.com/bertrandmartel/bluetooth-le-analyzer/tree/1.6) (2017-01-19)
+[Full Changelog](https://github.com/bertrandmartel/bluetooth-le-analyzer/compare/1.5...1.6)
+
 ## [1.5](https://github.com/bertrandmartel/bluetooth-le-analyzer/tree/1.5) (2016-04-21)
 [Full Changelog](https://github.com/bertrandmartel/bluetooth-le-analyzer/compare/1.4...1.5)
 
