@@ -8,4 +8,4 @@ rfdroid/build
 rfdroid/app/build
 rfduino-build/*.o
 rfduino-build/*.d
-
+signing.properties
